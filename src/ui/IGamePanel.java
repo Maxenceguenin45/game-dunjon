@@ -5,6 +5,5 @@ public interface IGamePanel {
     void setStats(String stats);
     void setGameOver(String message);
     void startCombatAnimation(int x, int y);
+    void resetGame();
 }
-
-@interface UIComponent {}

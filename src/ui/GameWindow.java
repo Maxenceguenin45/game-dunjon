@@ -1,19 +1,28 @@
 package ui;
 
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 
 public class GameWindow extends JFrame {
     private final GamePanel gamePanel;
+    private final AnimationPanel animationPanel;
     private volatile boolean choiceValidated;
     private volatile int currentChoice;
     private volatile int maxChoices;
+    private volatile boolean saveAndQuitRequested;
 
     public GameWindow() {
         setTitle("Dungeon Game");
         this.gamePanel = new GamePanel();
-        add(gamePanel);
+        this.animationPanel = new AnimationPanel();
+
+        // Layout avec le texte à gauche et l'animation à droite
+        setLayout(new BorderLayout());
+        add(gamePanel, BorderLayout.CENTER);
+        add(animationPanel, BorderLayout.EAST);
+
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         pack();
         setLocationRelativeTo(null);
@@ -48,6 +57,11 @@ public class GameWindow extends JFrame {
                     case KeyEvent.VK_ESCAPE:
                         validateChoice(-1);
                         break;
+                    case KeyEvent.VK_S:
+                        // Sauvegarder et quitter avec la touche S
+                        saveAndQuitRequested = true;
+                        validateChoice(-2);
+                        break;
                 }
             }
         });
@@ -57,6 +71,10 @@ public class GameWindow extends JFrame {
 
     public IGamePanel getGamePanel() {
         return gamePanel;
+    }
+
+    public AnimationPanel getAnimationPanel() {
+        return animationPanel;
     }
 
     public int waitForChoice(String[] descriptions) {
@@ -89,5 +107,13 @@ public class GameWindow extends JFrame {
             choiceValidated = true;
             notify();
         }
+    }
+
+    public boolean isSaveAndQuitRequested() {
+        return saveAndQuitRequested;
+    }
+
+    public void resetSaveAndQuitRequest() {
+        saveAndQuitRequested = false;
     }
 }

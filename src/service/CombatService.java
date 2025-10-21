@@ -32,13 +32,25 @@ public class CombatService {
      * Retourne les options disponibles pendant le combat.
      *
      * @param peutFuir True si le joueur peut fuir, false sinon
+     * @param aDesItems True si le joueur a des items dans son inventaire
      * @return Tableau des options disponibles
      */
-    public String[] getOptionsCombat(boolean peutFuir) {
-        if (peutFuir) {
+    public String[] getOptionsCombat(boolean peutFuir, boolean aDesItems) {
+        if (peutFuir && aDesItems) {
+            return new String[]{
+                GameMessages.MSG_CHOIX_COMBAT,
+                "Utiliser un item",
+                GameMessages.MSG_CHOIX_FUITE
+            };
+        } else if (peutFuir) {
             return new String[]{
                 GameMessages.MSG_CHOIX_COMBAT,
                 GameMessages.MSG_CHOIX_FUITE
+            };
+        } else if (aDesItems) {
+            return new String[]{
+                GameMessages.MSG_CHOIX_COMBAT,
+                "Utiliser un item"
             };
         }
         return new String[]{GameMessages.MSG_CHOIX_COMBAT};
@@ -57,12 +69,39 @@ public class CombatService {
     }
 
     /**
+     * Applique les dégâts de fuite au joueur.
+     *
+     * @param joueur Le joueur qui fuit
+     * @return Message décrivant la fuite
+     */
+    public String appliquerDegatsRetraite(model.Joueur joueur) {
+        int degatsRetraite = 10;
+        joueur.setPv(joueur.getPv() - degatsRetraite);
+        return "Vous battez en retraite ! Vous perdez " + degatsRetraite + " PV en fuyant.";
+    }
+
+    /**
+     * Vérifie si le joueur a choisi d'utiliser un item.
+     *
+     * @param choix L'index du choix du joueur
+     * @param aDesItems True si le joueur a des items
+     * @return True si le joueur veut utiliser un item, false sinon
+     */
+    public boolean veutUtiliserItem(int choix, boolean aDesItems) {
+        return aDesItems && choix == 1;
+    }
+
+    /**
      * Vérifie si le joueur a choisi de fuir.
      *
      * @param choix L'index du choix du joueur
+     * @param aDesItems True si le joueur a des items
      * @return True si le joueur fuit, false sinon
      */
-    public boolean doitFuir(int choix) {
-        return 1 == choix;
+    public boolean doitFuir(int choix, boolean aDesItems) {
+        if (aDesItems) {
+            return choix == 2; // Fuir est en position 2 si on a des items
+        }
+        return choix == 1; // Fuir est en position 1 si on n'a pas d'items
     }
 }

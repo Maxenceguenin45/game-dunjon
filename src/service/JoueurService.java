@@ -19,6 +19,17 @@ public class JoueurService {
         return Joueur.loadFromFile(SAVE_FILE);
     }
 
+    public void sauvegarderJoueur(Joueur joueur) throws IOException {
+        joueur.saveToFile(SAVE_FILE);
+    }
+
+    public void supprimerSauvegarde() {
+        File saveFile = new File(SAVE_FILE);
+        if (saveFile.exists()) {
+            saveFile.delete();
+        }
+    }
+
     public String genererStatsJoueur(Joueur joueur) {
         if (null == joueur) {
             return "";

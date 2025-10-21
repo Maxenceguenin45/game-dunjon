@@ -92,6 +92,30 @@ public class GamePanel extends JPanel implements IGamePanel {
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
+        // Afficher l'écran de game over si nécessaire
+        if (gameOver) {
+            drawGameOver(g2d);
+            // Afficher quand même les choix en mode game over (Rejouer/Quitter)
+            if (choices != null && choices.length > 0) {
+                g2d.setFont(new Font("Arial", Font.BOLD, 20));
+                int y = getHeight() / 2 + 100;
+                for (int i = 0; i < choices.length; i++) {
+                    if (choices[i] != null) {
+                        // Mettre en surbrillance le choix sélectionné
+                        if (i == playerPosition) {
+                            g2d.setColor(Color.YELLOW);
+                            g2d.drawString("> " + choices[i], (getWidth() - g2d.getFontMetrics().stringWidth("> " + choices[i])) / 2, y);
+                        } else {
+                            g2d.setColor(Color.WHITE);
+                            g2d.drawString("  " + choices[i], (getWidth() - g2d.getFontMetrics().stringWidth("  " + choices[i])) / 2, y);
+                        }
+                        y += 40;
+                    }
+                }
+            }
+            return; // Ne pas afficher le reste en mode game over
+        }
+
         // Afficher les messages
         if (infoMessages != null) {
             g2d.setColor(Color.WHITE);
@@ -129,15 +153,17 @@ public class GamePanel extends JPanel implements IGamePanel {
             g2d.drawString(statsMessage, 10, getHeight() - 30);
         }
 
+        // Afficher "Appuyez sur S pour sauvegarder et quitter" en bas à droite
+        g2d.setColor(new Color(200, 200, 200));
+        g2d.setFont(new Font("Arial", Font.PLAIN, 12));
+        String saveHint = "Appuyez sur S pour sauvegarder et quitter";
+        int hintWidth = g2d.getFontMetrics().stringWidth(saveHint);
+        g2d.drawString(saveHint, getWidth() - hintWidth - 10, getHeight() - 10);
+
         // Afficher l'animation de combat si active
         if (null != combatAnimation && combatAnimation.isActive()) {
             combatAnimation.draw(g2d);
             repaint();
-        }
-
-        // Afficher l'écran de game over si nécessaire
-        if (gameOver) {
-            drawGameOver(g2d);
         }
     }
 

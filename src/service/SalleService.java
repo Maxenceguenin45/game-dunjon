@@ -1,6 +1,7 @@
 package service;
 
 import model.salle.*;
+import model.Item;
 import java.util.Random;
 
 public class SalleService {
@@ -9,7 +10,12 @@ public class SalleService {
     private static final int ATK_BASE_ENNEMI = 5;
     private static final int PV_BASE_BOSS = 80;
     private static final int ATK_BASE_BOSS = 15;
-    private static final int NB_TYPES_SALLE = 4;
+    private static final int NB_TYPES_SALLE = 5;
+    private final ItemService itemService;
+
+    public SalleService() {
+        this.itemService = new ItemService();
+    }
 
     public int genererNombreChemins() {
         return 1 + random.nextInt(3);
@@ -32,6 +38,7 @@ public class SalleService {
         int type = random.nextInt(NB_TYPES_SALLE);
         switch (type) {
             case 0:
+            case 4: // Augmenter la fréquence des ennemis
                 int pvEnnemi = PV_BASE_ENNEMI + niveau * 10 + random.nextInt(11);
                 int atkEnnemi = ATK_BASE_ENNEMI + niveau * 2 + random.nextInt(3);
                 return new SalleEnnemi(pvEnnemi, atkEnnemi);
@@ -85,6 +92,10 @@ public class SalleService {
                     salleBoss.getPv());
             }
         }
+        return null;
+    }
+
+    public String traiterSalleItem(Salle salle) {
         return null;
     }
 }

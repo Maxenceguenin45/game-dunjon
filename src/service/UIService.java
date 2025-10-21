@@ -2,6 +2,7 @@ package service;
 
 import ui.IGamePanel;
 import ui.GameWindow;
+import ui.AnimationPanel;
 import util.GameMessages;
 
 public class UIService {
@@ -32,5 +33,17 @@ public class UIService {
         return String.format("%s\n%s",
             String.format(GameMessages.MSG_FORMAT_SALLE, numero),
             String.format(GameMessages.MSG_FORMAT_AVANCE, description));
+    }
+
+    public void changerSceneAnimation(GameWindow window, AnimationPanel.SceneType scene) {
+        if (null != window && null != window.getAnimationPanel()) {
+            window.getAnimationPanel().setScene(scene);
+        }
+    }
+
+    public void changerSceneAnimation(GameWindow window, AnimationPanel.SceneType scene, int nombreChoix) {
+        if (null != window && null != window.getAnimationPanel()) {
+            window.getAnimationPanel().setScene(scene, nombreChoix);
+        }
     }
 }
