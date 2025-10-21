@@ -15,7 +15,6 @@ public class AnimationPanel extends JPanel {
     
     private SceneType currentScene;
     private int animationFrame = 0;
-    private Timer animationTimer;
     private int nombreChoix = 2; // Nombre de choix/portes à afficher
     // Facteur de suréchantillonnage (1 = normal, 2 = rendu 2x puis réduction)
     private int hdScale = 2;
@@ -40,7 +39,7 @@ public class AnimationPanel extends JPanel {
         currentScene = SceneType.MENU;
         
         // Timer pour l'animation (30 FPS)
-        animationTimer = new Timer(33, e -> {
+        Timer animationTimer = new Timer(33, e -> {
             animationFrame++;
             repaint();
         });
@@ -163,13 +162,13 @@ public class AnimationPanel extends JPanel {
     
     private void drawMenuScene(Graphics2D g2d) {
         // Dessiner un donjon avec une porte
-        drawDungeon(g2d, 50, 150);
-        
+        drawDungeon(g2d, 50, 100);
+
         // Titre animé
         int offset = (int)(Math.sin(animationFrame * 0.1) * 5);
         g2d.setColor(Color.YELLOW);
         g2d.setFont(new Font("Monospaced", Font.BOLD, 24));
-        drawPixelText(g2d, "DONJON", 70, 50 + offset);
+        drawPixelText(g2d, "DUNGEON", 70, 100 + offset);
     }
     
     private void drawExplorationScene(Graphics2D g2d) {
@@ -179,21 +178,21 @@ public class AnimationPanel extends JPanel {
         // Afficher les portes selon le nombre de choix (2 ou 3)
         if (nombreChoix == 2) {
             // 2 portes avec torches
-            drawTorch(g2d, 50, 180, animationFrame);
-            drawDoor(g2d, 35, 220, 1);
+            drawTorch(g2d, 50, 250, animationFrame);
+            drawDoor(g2d, 35, 250, 1);
 
-            drawTorch(g2d, 220, 180, animationFrame + 15);
-            drawDoor(g2d, 205, 220, 2);
+            drawTorch(g2d, 220, 250, animationFrame + 15);
+            drawDoor(g2d, 205, 250, 2);
         } else if (nombreChoix == 3) {
             // 3 portes avec torches
-            drawTorch(g2d, 30, 180, animationFrame);
-            drawDoor(g2d, 15, 220, 1);
+            drawTorch(g2d, 30, 250, animationFrame);
+            drawDoor(g2d, 15, 250, 1);
 
-            drawTorch(g2d, 135, 180, animationFrame + 10);
-            drawDoor(g2d, 120, 220, 2);
+            drawTorch(g2d, 135, 250, animationFrame + 10);
+            drawDoor(g2d, 120, 250, 2);
 
-            drawTorch(g2d, 240, 180, animationFrame + 20);
-            drawDoor(g2d, 225, 220, 3);
+            drawTorch(g2d, 240, 250, animationFrame + 20);
+            drawDoor(g2d, 225, 250, 3);
         }
 
         // Halo doux derrière le personnage pour le rendre plus visible
@@ -220,8 +219,8 @@ public class AnimationPanel extends JPanel {
         drawPlayer(g2d, 60, 350, 0);
         
         // Ennemi à droite
-        drawEnemy(g2d, 200, 340);
-        
+        drawEnemy(g2d);
+
         // Animation de coup (surimpression si active)
         drawSceneCombatAnimation(g2d);
     }
@@ -239,7 +238,7 @@ public class AnimationPanel extends JPanel {
         } else {
             g2d.setColor(new Color(139, 0, 0));
         }
-        drawEnemy(g2d, 200, 340);
+        drawEnemy(g2d);
 
         // Animation de coup
         drawSceneCombatAnimation(g2d);
@@ -276,7 +275,7 @@ public class AnimationPanel extends JPanel {
         
         // Boss (plus grand)
         drawBoss(g2d, 180, 300);
-        
+
         // Effet de menace
         if (animationFrame % 20 < 10) {
             g2d.setColor(new Color(255, 0, 0, 50));
@@ -321,15 +320,15 @@ public class AnimationPanel extends JPanel {
         drawCorridor(g2d);
         
         // Coffre au centre
-        drawChest(g2d, 120, 300, animationFrame % 40 > 20);
-        
+        drawChest(g2d, 140, 280, animationFrame % 40 > 20);
+
         // Joueur devant
         drawPlayer(g2d, 120, 380, 0);
         
         // Items qui flottent
         if (animationFrame % 40 > 20) {
             int floatY = (int)(Math.sin(animationFrame * 0.2) * 10);
-            drawItem(g2d, 140, 250 + floatY);
+            drawItem(g2d, 150, 250 + floatY);
         }
     }
     
@@ -437,10 +436,10 @@ public class AnimationPanel extends JPanel {
     }
 
     
-    private void drawEnemy(Graphics2D g2d, int x, int y) {
-        int px = x / PIXEL_SIZE;
-        int py = y / PIXEL_SIZE;
-        
+    private void drawEnemy(Graphics2D g2d) {
+        int px = 200 / PIXEL_SIZE;
+        int py = 340 / PIXEL_SIZE;
+
         // Ombre
         g2d.setColor(new Color(0, 0, 0, 60));
         fillPixel(g2d, px - 1, py + 9, 5, 1);
@@ -473,7 +472,7 @@ public class AnimationPanel extends JPanel {
     private void drawBoss(Graphics2D g2d, int x, int y) {
         int px = x / PIXEL_SIZE;
         int py = y / PIXEL_SIZE;
-        
+
         // Ombre
         g2d.setColor(new Color(0, 0, 0, 70));
         fillPixel(g2d, px - 2, py + 11, 9, 1);
@@ -598,7 +597,7 @@ public class AnimationPanel extends JPanel {
     private void drawChest(Graphics2D g2d, int x, int y, boolean open) {
         int px = x / PIXEL_SIZE;
         int py = y / PIXEL_SIZE;
-        
+
         // Corps du coffre
         g2d.setColor(new Color(139, 69, 19));
         fillPixel(g2d, px, py + 2, 4, 3);
