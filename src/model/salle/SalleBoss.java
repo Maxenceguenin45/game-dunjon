@@ -13,8 +13,8 @@ public class SalleBoss implements Salle, CombattantSalle {
 
     @Override
     public void entrer(Joueur joueur) {
-        // Combat avec le boss : le joueur attaque en premier
-        pv -= joueur.getAttaque();
+        // Combat avec le boss : le joueur attaque en premier avec son attaque totale (incluant l'arme)
+        pv -= joueur.getAttaqueTotale();
         if (pv > 0) {
             // Le boss fait plus de dégâts qu'un ennemi normal
             joueur.setPv(joueur.getPv() - attaque);
@@ -36,3 +36,4 @@ public class SalleBoss implements Salle, CombattantSalle {
         return attaque;
     }
 }
+

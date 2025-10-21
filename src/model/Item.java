@@ -29,46 +29,46 @@ public class Item {
     }
 
     /**
-     * Utilise l'item sur le joueur.
-     *
-     * @param joueur Le joueur qui utilise l'item
-     * @return Message décrivant l'effet de l'item
+     * Utilise l'item sur le joueur
+     * @param joueur le joueur qui utilise l'item
+     * @return message décrivant l'effet
      */
     public String utiliser(Joueur joueur) {
         switch (type) {
             case POTION_SOIN:
-                int pvActuels = joueur.getPv();
-                int nouveauxPv = Math.min(pvActuels + valeur, joueur.getPvMax());
-                joueur.setPv(nouveauxPv);
-                int pvGagnes = nouveauxPv - pvActuels;
-                return "Vous utilisez " + nom + " et récupérez " + pvGagnes + " PV !";
+                int soin = valeur;
+                joueur.setPv(joueur.getPv() + soin);
+                return String.format("Vous utilisez %s et récupérez %d PV !", nom, soin);
 
             case POTION_FORCE:
-                joueur.setAttaque(joueur.getAttaque() + valeur);
-                return "Vous utilisez " + nom + " ! Votre attaque augmente de " + valeur + " !";
+                int bonusForce = valeur;
+                joueur.setAttaque(joueur.getAttaque() + bonusForce);
+                return String.format("Vous utilisez %s ! Attaque +%d", nom, bonusForce);
 
             case ARMURE:
-                joueur.setPvMax(joueur.getPvMax() + valeur);
-                joueur.setPv(joueur.getPv() + valeur);
-                return "Vous équipez " + nom + " ! Vos PV max augmentent de " + valeur + " !";
+                int bonusPv = valeur;
+                joueur.setPvMax(joueur.getPvMax() + bonusPv);
+                joueur.setPv(joueur.getPv() + bonusPv);
+                return String.format("Vous équipez %s ! PV Max +%d", nom, bonusPv);
+
+            case ARME:
+                int bonusAttaque = valeur;
+                joueur.setAttaque(joueur.getAttaque() + bonusAttaque);
+                return String.format("Vous équipez %s ! Attaque +%d", nom, bonusAttaque);
 
             default:
-                return "Vous utilisez " + nom + ".";
+                return "Vous utilisez " + nom;
         }
     }
 
-    @Override
-    public String toString() {
-        return nom + " (" + type.getDescription() + ")";
-    }
-
     /**
-     * Énumération des types d'items disponibles.
+     * Énumération des types d'items
      */
     public enum TypeItem {
-        POTION_SOIN("Restaure des PV"),
-        POTION_FORCE("Augmente l'attaque"),
-        ARMURE("Augmente les PV max");
+        POTION_SOIN("Potion de soin"),
+        POTION_FORCE("Potion de force"),
+        ARMURE("Armure"),
+        ARME("Arme");
 
         private final String description;
 
@@ -80,5 +80,9 @@ public class Item {
             return description;
         }
     }
-}
 
+    @Override
+    public String toString() {
+        return nom + " (" + type.getDescription() + ", valeur: " + valeur + ")";
+    }
+}

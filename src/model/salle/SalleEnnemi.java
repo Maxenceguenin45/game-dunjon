@@ -13,8 +13,8 @@ public class SalleEnnemi implements Salle, CombattantSalle {
 
     @Override
     public void entrer(Joueur joueur) {
-        // Combat simple : le joueur attaque en premier
-        pv -= joueur.getAttaque();
+        // Combat simple : le joueur attaque en premier avec son attaque totale (incluant l'arme)
+        pv -= joueur.getAttaqueTotale();
         if (pv > 0) {
             joueur.setPv(joueur.getPv() - attaque);
         }

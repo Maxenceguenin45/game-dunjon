@@ -1,7 +1,7 @@
 package service;
 
 import model.salle.*;
-import model.Item;
+
 import java.util.Random;
 
 public class SalleService {

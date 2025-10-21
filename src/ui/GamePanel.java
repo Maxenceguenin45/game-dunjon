@@ -458,26 +458,34 @@ public class GamePanel extends JPanel implements IGamePanel {
         int x = margin + 20;
         int y = margin + 25;
 
-        // Titre "Niveau" plus visible
+        // Titre "Niveau" à gauche et ATK à droite sur la même ligne
         g2d.setColor(new Color(255, 215, 0));
         g2d.setFont(new Font("Serif", Font.BOLD, 20));
         g2d.drawString("Niveau " + niveau, x, y);
 
+        // ATK à droite avec icône épée
+        g2d.setColor(new Color(255, 150, 50));
+        g2d.setFont(new Font("Serif", Font.BOLD, 18));
+        String atkText = "⚔ ATK: " + attaque;
+        int atkWidth = g2d.getFontMetrics().stringWidth(atkText);
+        g2d.drawString(atkText, getWidth() - margin - 20 - atkWidth, y);
+
         // Stats du joueur avec taille augmentée
-        y += 28;
+        y += 20;
         g2d.setFont(new Font("Monospaced", Font.BOLD, 15));
 
         // BARRE DE VIE VISUELLE GRANDE
         int barWidth = getWidth() - 2 * margin - 40;
-        int barHeight = 24;
+        int barHeight = 28;
         int barX = x;
 
-        // Label PV
-        g2d.setColor(new Color(255, 255, 255));
-        g2d.drawString("PV:", x, y);
+        // Label PV au-dessus de la barre
+        g2d.setColor(new Color(220, 220, 220));
+        g2d.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        g2d.drawString("Points de Vie", barX, y);
 
         // Position de la barre
-        int pvBarY = y + 5;
+        int pvBarY = y + 3;
 
         // Ombre de la barre
         g2d.setColor(new Color(0, 0, 0, 120));
@@ -540,16 +548,8 @@ public class GamePanel extends JPanel implements IGamePanel {
         g2d.setColor(Color.WHITE);
         g2d.drawString(pvText, barX + (barWidth - pvTextWidth) / 2, pvBarY + barHeight - 5);
 
-        // Attaque - Plus visible
-        y += 35;
-        g2d.setColor(new Color(255, 150, 50));
-        g2d.fillRect(x + 2, y - 12, 10, 15);
-        g2d.setColor(new Color(255, 255, 255));
-        g2d.setFont(new Font("Monospaced", Font.BOLD, 16));
-        g2d.drawString(String.format("ATK: %d", attaque), x + 20, y);
-
-        // Barre d'expérience
-        y += 25;
+        // Barre d'expérience - plus d'espace entre PV et XP
+        y += 45;
         g2d.setFont(new Font("Serif", Font.PLAIN, 12));
         g2d.setColor(new Color(200, 200, 200));
         g2d.drawString(String.format("XP: %d / %d", experience, experienceRequise), x, y);

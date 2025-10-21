@@ -1,6 +1,7 @@
 package personnage;
 
 import model.Inventaire;
+import item.arme.Arme;
 
 import java.io.*;
 
@@ -15,6 +16,9 @@ public class Joueur implements Personnage {
     private int ennemisTues;
     private int bossVaincus;
     private Inventaire inventaire;
+
+    // Arme équipée
+    private Arme armeEquipee;
 
     // Système d'expérience et de niveau
     private int niveau;
@@ -32,6 +36,7 @@ public class Joueur implements Personnage {
         this.niveau = 1;
         this.experience = 0;
         this.experienceRequise = 100; // XP nécessaire pour le niveau 2
+        this.armeEquipee = null;
     }
 
     // Getters
@@ -78,6 +83,10 @@ public class Joueur implements Personnage {
         return experienceRequise;
     }
 
+    public Arme getArmeEquipee() {
+        return armeEquipee;
+    }
+
     // Setters
     @Override
     public void setPv(int pv) {
@@ -111,6 +120,22 @@ public class Joueur implements Personnage {
 
     public void setExperienceRequise(int experienceRequise) {
         this.experienceRequise = experienceRequise;
+    }
+
+    public void setArmeEquipee(Arme arme) {
+        this.armeEquipee = arme;
+    }
+
+    /**
+     * Calcule l'attaque totale du joueur avec le bonus de l'arme équipée
+     */
+    public int getAttaqueTotale() {
+        if (armeEquipee == null) {
+            return attaque;
+        }
+
+        // Attaque de base + dégâts de l'arme avec bonus de maîtrise
+        return attaque + armeEquipee.calculerDegatsTotal();
     }
 
     /**

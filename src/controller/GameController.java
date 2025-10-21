@@ -218,6 +218,11 @@ public class GameController {
             uiService.changerSceneAnimation(gameWindow, ui.AnimationPanel.SceneType.AMELIORATION);
         }
 
+        // Gestion spéciale pour la salle d'entraînement
+        if (salle instanceof model.salle.SalleAmelioration) {
+            return gererSalleEntrainement(joueur, (model.salle.SalleAmelioration) salle);
+        }
+
         boolean salleFinie = false;
         while (!salleFinie && 0 < joueur.getPv()) {
             // Vérifier si le joueur a demandé à sauvegarder et quitter
@@ -387,6 +392,92 @@ public class GameController {
         return 1; // Salle terminée avec succès
     }
     
+    /**
+     * Gère la salle d'entraînement avec choix d'arme
+     */
+    private int gererSalleEntrainement(Joueur joueur, model.salle.SalleAmelioration salle) {
+        java.util.List<item.arme.Arme> armesDisponibles = salle.getArmesDisponibles(joueur);
+
+        if (armesDisponibles.isEmpty()) {
+            // Pas d'armes, entraînement basique
+            salle.entrer(joueur);
+            uiService.afficherMessage(gameWindow.getGamePanel(),
+                "Vous vous entraînez avec vos poings ! Attaque +2");
+            uiService.afficherStatsDetailles(gameWindow.getGamePanel(), joueur);
+            return 1;
+        }
+
+        // Construire les options avec les armes
+        String[] optionsArmes = new String[armesDisponibles.size() + 1];
+        for (int i = 0; i < armesDisponibles.size(); i++) {
+            item.arme.Arme arme = armesDisponibles.get(i);
+            optionsArmes[i] = String.format("%s (Niv.%d, +%.0f%% bonus, %d/%d XP)",
+                arme.getNom(),
+                arme.getNiveauMaitrise(),
+                arme.getBonusMaitrise(),
+                arme.getExperienceMaitrise(),
+                arme.getExperienceRequise());
+        }
+        optionsArmes[armesDisponibles.size()] = "Passer l'entraînement";
+
+        uiService.afficherMessage(gameWindow.getGamePanel(),
+            "⚔️ Salle d'entraînement : Choisissez une arme à maîtriser");
+
+        int choix = gameWindow.waitForChoice(optionsArmes);
+
+        // Vérifier si le joueur a quitté
+        if (gameWindow.isSaveAndQuitRequested()) {
+            gameWindow.resetSaveAndQuitRequest();
+            try {
+                joueurService.sauvegarderJoueur(joueur);
+                uiService.afficherMessage(gameWindow.getGamePanel(),
+                    "Partie sauvegardée avec succès !");
+            } catch (Exception e) {
+                uiService.afficherMessage(gameWindow.getGamePanel(),
+                    "Erreur lors de la sauvegarde : " + e.getMessage());
+            }
+            String[] optionsSauvegarde = {"Continuer à jouer", "Quitter le jeu"};
+            int choixSauvegarde = gameWindow.waitForChoice(optionsSauvegarde);
+            if (choixSauvegarde == 1) {
+                uiService.afficherMessage(gameWindow.getGamePanel(),
+                    "À bientôt, " + joueur.getPseudo() + " !");
+                combatService.attendreProchaineAction();
+                return -1;
+            }
+        }
+
+        if (choix < 0 || choix >= armesDisponibles.size()) {
+            // Passer l'entraînement
+            uiService.afficherMessage(gameWindow.getGamePanel(),
+                "Vous décidez de passer votre chemin.");
+            return 1;
+        }
+
+        // S'entraîner avec l'arme choisie
+        item.arme.Arme armeChoisie = armesDisponibles.get(choix);
+        String messageEntrainement = salle.entrainerAvecArme(joueur, armeChoisie);
+
+        // Afficher les messages ligne par ligne
+        for (String ligne : messageEntrainement.split("\n")) {
+            uiService.afficherMessage(gameWindow.getGamePanel(), ligne);
+        }
+
+        // Vérifier si l'arme a gagné un niveau
+        if (messageEntrainement.contains("✨")) {
+            // Notification de montée de niveau de maîtrise
+            if (gameWindow.getGamePanel() instanceof ui.GamePanel) {
+                ((ui.GamePanel) gameWindow.getGamePanel()).showNotification(
+                    "Maîtrise améliorée !",
+                    ui.GamePanel.NotificationType.ACHIEVEMENT,
+                    3000
+                );
+            }
+        }
+
+        uiService.afficherStatsDetailles(gameWindow.getGamePanel(), joueur);
+        return 1;
+    }
+
     private boolean gererFinPartie(Joueur joueur, int sallesParcourues, boolean victoire) {
         // Changer la scène selon le résultat
         if (victoire) {

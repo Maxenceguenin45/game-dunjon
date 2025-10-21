@@ -1,7 +1,7 @@
 package model.salle;
 
-import model.Item;
 import personnage.Joueur;
+import model.Item;
 
 /**
  * Salle contenant un item à récupérer.
@@ -36,4 +36,3 @@ public class SalleItem implements Salle {
         return "Vous trouvez : " + item.toString();
     }
 }
-
