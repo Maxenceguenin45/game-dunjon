@@ -7,6 +7,7 @@ import util.GameConstants;
 
 public class GamePanel extends JPanel implements IGamePanel {
     private final CombatAnimation combatAnimation;
+    private boolean enableCombatAnimation = false; // désactivé pour ne pas salir la zone texte
     private int playerPosition = 0;
     private String[] infoMessages = new String[5];
     private String[] choices;
@@ -30,6 +31,11 @@ public class GamePanel extends JPanel implements IGamePanel {
             combatAnimation.start(x, y);
             repaint();
         }
+    }
+
+    // Permet d'activer/désactiver l'animation dans la zone texte si un jour nécessaire
+    public void setEnableCombatAnimation(boolean enable) {
+        this.enableCombatAnimation = enable;
     }
 
     @Override
@@ -160,8 +166,8 @@ public class GamePanel extends JPanel implements IGamePanel {
         int hintWidth = g2d.getFontMetrics().stringWidth(saveHint);
         g2d.drawString(saveHint, getWidth() - hintWidth - 10, getHeight() - 10);
 
-        // Afficher l'animation de combat si active
-        if (null != combatAnimation && combatAnimation.isActive()) {
+        // Afficher l'animation de combat si active (désactivée par défaut pour garder le texte propre)
+        if (enableCombatAnimation && null != combatAnimation && combatAnimation.isActive()) {
             combatAnimation.draw(g2d);
             repaint();
         }

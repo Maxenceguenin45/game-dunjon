@@ -46,4 +46,11 @@ public class UIService {
             window.getAnimationPanel().setScene(scene, nombreChoix);
         }
     }
+
+    // Nouveau: régler la précision visuelle de l'animation (1=normal, 2-3=plus précis)
+    public void reglerQualiteAnimation(GameWindow window, int hdScale) {
+        if (null != window && null != window.getAnimationPanel()) {
+            window.getAnimationPanel().setHdScale(hdScale);
+        }
+    }
 }

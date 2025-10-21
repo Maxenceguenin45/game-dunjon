@@ -27,6 +27,9 @@ public class GameController {
         this.combatService = new CombatService(gameWindow.getGamePanel());
         this.itemService = new ItemService();
 
+        // Activer un rendu plus précis pour l'animation (2 = HD, 3 = très HD)
+        uiService.reglerQualiteAnimation(gameWindow, 2);
+
         // Démarrer avec la scène de menu
         uiService.changerSceneAnimation(gameWindow, ui.AnimationPanel.SceneType.MENU);
     }
@@ -246,7 +249,12 @@ public class GameController {
 
             int pvAvant = (salle instanceof CombattantSalle) ? ((CombattantSalle)salle).getPv() : 0;
             salle.entrer(joueur);
-            
+            // Déclencher l'animation de coup d'épée côté AnimationPanel (la scène)
+            if (gameWindow != null && gameWindow.getAnimationPanel() != null) {
+                // Coordonnées autour du milieu entre le joueur (60,350) et l'ennemi (200,340)
+                gameWindow.getAnimationPanel().startSceneCombatAnimation(130, 345);
+            }
+
             String messageCombat = salleService.traiterCombat(salle, pvAvant);
             if (null != messageCombat) {
                 uiService.afficherMessage(gameWindow.getGamePanel(), messageCombat);
@@ -290,7 +298,7 @@ public class GameController {
                             try {
                                 joueurService.sauvegarderJoueur(joueur);
                                 uiService.afficherMessage(gameWindow.getGamePanel(),
-                                    "Partie sauvegardée avec succès !");
+                                    "Partie sauvegardée avec succ��s !");
                             } catch (Exception e) {
                                 uiService.afficherMessage(gameWindow.getGamePanel(),
                                     "Erreur lors de la sauvegarde : " + e.getMessage());
@@ -400,32 +408,24 @@ public class GameController {
                 uiService.afficherMessage(gameWindow.getGamePanel(), messageUtilisation);
                 uiService.afficherStats(gameWindow.getGamePanel(),
                     joueurService.genererStatsJoueur(joueur));
-
-                // Si l'inventaire est vide après utilisation, sortir
-                if (joueur.getInventaire().estVide()) {
-                    uiService.afficherMessage(gameWindow.getGamePanel(),
-                        "Inventaire vide.");
-                    continuer = false;
-                }
             }
         }
     }
 
     private void gererInventaireCombat(Joueur joueur) {
-        String[] optionsInventaire = itemService.getDescriptionsInventaire(joueur);
-        uiService.afficherMessage(gameWindow.getGamePanel(),
-            "=== Inventaire (" + joueur.getInventaire().getNombreItems() + "/"
-            + joueur.getInventaire().getCapaciteMax() + ") ===");
+        boolean continuer = true;
+        while (continuer && joueur.getPv() > 0) {
+            String[] optionsInventaire = itemService.getDescriptionsInventaire(joueur);
+            int choix = gameWindow.waitForChoice(optionsInventaire);
 
-        int choix = gameWindow.waitForChoice(optionsInventaire);
-
-        if (choix >= 0 && choix < joueur.getInventaire().getNombreItems()) {
-            // Utiliser l'item
-            String messageUtilisation = itemService.utiliserItem(joueur, choix);
-            uiService.afficherMessage(gameWindow.getGamePanel(), messageUtilisation);
-            uiService.afficherStats(gameWindow.getGamePanel(),
-                joueurService.genererStatsJoueur(joueur));
+            if (choix < 0 || choix >= joueur.getInventaire().getNombreItems()) {
+                continuer = false; // Retour ou invalide
+            } else {
+                String messageUtilisation = itemService.utiliserItem(joueur, choix);
+                uiService.afficherMessage(gameWindow.getGamePanel(), messageUtilisation);
+                uiService.afficherStats(gameWindow.getGamePanel(),
+                    joueurService.genererStatsJoueur(joueur));
+            }
         }
-        // Si choix "Retour" ou invalide, on retourne au combat
     }
 }

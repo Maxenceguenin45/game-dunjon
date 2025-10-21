@@ -3,6 +3,7 @@ package ui;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import animation.CombatAnimation;
 
 /**
  * Panneau d'animation en pixel art affichant les scènes du jeu
@@ -16,6 +17,9 @@ public class AnimationPanel extends JPanel {
     private int animationFrame = 0;
     private Timer animationTimer;
     private int nombreChoix = 2; // Nombre de choix/portes à afficher
+    // Facteur de suréchantillonnage (1 = normal, 2 = rendu 2x puis réduction)
+    private int hdScale = 2;
+    private final CombatAnimation sceneCombatAnimation = new CombatAnimation();
 
     public enum SceneType {
         MENU,
@@ -56,12 +60,73 @@ public class AnimationPanel extends JPanel {
         repaint();
     }
 
+    /**
+     * Permet d'ajuster le facteur de précision visuelle.
+     * 1 = désactivé (rendu normal), 2 ou 3 = rendu plus fin.
+     */
+    public void setHdScale(int scale) {
+        if (scale < 1) scale = 1;
+        if (scale > 3) scale = 3;
+        this.hdScale = scale;
+        repaint();
+    }
+
+    /**
+     * Démarre l'animation de combat dans la scène (coordonnées en pixels du panneau AnimationPanel)
+     */
+    public void startSceneCombatAnimation(int x, int y) {
+        sceneCombatAnimation.start(x, y);
+        repaint();
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
-        
-        // Dessiner la scène actuelle
+
+        // Hints de rendu haute qualité pour des formes plus lisses et un texte net
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+        g2d.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+        g2d.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
+        g2d.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_QUALITY);
+        g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+        if (hdScale <= 1) {
+            drawCurrentScene(g2d);
+            return;
+        }
+
+        // Suréchantillonnage : rendu dans un buffer HD puis réduction
+        int w = Math.max(1, getWidth() * hdScale);
+        int h = Math.max(1, getHeight() * hdScale);
+        BufferedImage hdImg = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D gHD = hdImg.createGraphics();
+        try {
+            // Appliquer les mêmes hints + échelle
+            gHD.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            gHD.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            gHD.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+            gHD.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+            gHD.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
+            gHD.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_QUALITY);
+            gHD.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+            // Mise à l'échelle du contexte pour conserver les coordonnées d'origine
+            gHD.scale(hdScale, hdScale);
+
+            drawCurrentScene(gHD);
+        } finally {
+            gHD.dispose();
+        }
+
+        // Dessiner l'image HD réduite dans le panneau
+        g2d.drawImage(hdImg, 0, 0, getWidth(), getHeight(), null);
+    }
+
+    // Factorisation du dessin de la scène courante
+    private void drawCurrentScene(Graphics2D g2d) {
         switch (currentScene) {
             case MENU:
                 drawMenuScene(g2d);
@@ -131,6 +196,10 @@ public class AnimationPanel extends JPanel {
             drawDoor(g2d, 225, 220, 3);
         }
 
+        // Halo doux derrière le personnage pour le rendre plus visible
+        g2d.setColor(new Color(255, 255, 200, 60));
+        g2d.fillOval(115, 360, 100, 100); // autour de la tête/torse du joueur
+
         // Joueur qui marche au centre (animation simple)
         int walkCycle = (animationFrame / 10) % 2;
         drawPlayer(g2d, 140, 400, walkCycle);
@@ -153,10 +222,8 @@ public class AnimationPanel extends JPanel {
         // Ennemi à droite
         drawEnemy(g2d, 200, 340);
         
-        // Effet d'épée si animation
-        if (animationFrame % 30 < 15) {
-            drawSwordSlash(g2d, 130, 350);
-        }
+        // Animation de coup (surimpression si active)
+        drawSceneCombatAnimation(g2d);
     }
     
     private void drawEnnemisBlesseScene(Graphics2D g2d) {
@@ -173,6 +240,9 @@ public class AnimationPanel extends JPanel {
             g2d.setColor(new Color(139, 0, 0));
         }
         drawEnemy(g2d, 200, 340);
+
+        // Animation de coup
+        drawSceneCombatAnimation(g2d);
     }
     
     private void drawVictoireScene(Graphics2D g2d) {
@@ -212,8 +282,17 @@ public class AnimationPanel extends JPanel {
             g2d.setColor(new Color(255, 0, 0, 50));
             g2d.fillRect(0, 0, getWidth(), getHeight());
         }
+
+        // Animation de coup
+        drawSceneCombatAnimation(g2d);
     }
-    
+
+    private void drawSceneCombatAnimation(Graphics2D g2d) {
+        if (sceneCombatAnimation.isActive()) {
+            sceneCombatAnimation.draw(g2d);
+        }
+    }
+
     private void drawSoinScene(Graphics2D g2d) {
         // Fond apaisant
         g2d.setColor(new Color(20, 40, 60));
@@ -298,20 +377,43 @@ public class AnimationPanel extends JPanel {
     private void fillPixel(Graphics2D g2d, int x, int y, int width, int height) {
         g2d.fillRect(x * PIXEL_SIZE, y * PIXEL_SIZE, width * PIXEL_SIZE, height * PIXEL_SIZE);
     }
-    
+
     private void drawPlayer(Graphics2D g2d, int x, int y, int walkCycle) {
         // Conversion en coordonnées pixel art
         int px = x / PIXEL_SIZE;
         int py = y / PIXEL_SIZE;
-        
+
+        // Ombre au sol pour un rendu plus "réel"
+        g2d.setColor(new Color(0, 0, 0, 60));
+        fillPixel(g2d, px - 1, py + 9, 5, 1);
+
         // Tête
         g2d.setColor(new Color(255, 220, 180));
         fillPixel(g2d, px, py, 3, 3);
-        
-        // Corps (armure)
+
+        // Casque plus visible (2 rangées + reflet central)
+        g2d.setColor(new Color(90, 90, 140));
+        fillPixel(g2d, px, py - 2, 3, 1);
+        fillPixel(g2d, px, py - 1, 3, 1);
+        g2d.setColor(new Color(180, 180, 230)); // reflet
+        fillPixel(g2d, px + 1, py - 2, 1, 1);
+
+        // Yeux
+        g2d.setColor(new Color(40, 40, 60));
+        fillPixel(g2d, px, py + 1, 1, 1);
+        fillPixel(g2d, px + 2, py + 1, 1, 1);
+
+        // Corps (armure) avec léger ombrage latéral
         g2d.setColor(new Color(100, 100, 150));
         fillPixel(g2d, px, py + 3, 3, 4);
-        
+        g2d.setColor(new Color(80, 80, 120)); // ombre côté gauche
+        fillPixel(g2d, px, py + 3, 1, 4);
+        g2d.setColor(new Color(120, 120, 170)); // éclaircie au centre
+        fillPixel(g2d, px + 1, py + 4, 1, 2);
+        // Ceinture
+        g2d.setColor(new Color(120, 90, 40));
+        fillPixel(g2d, px, py + 6, 3, 1);
+
         // Jambes
         g2d.setColor(new Color(50, 50, 100));
         if (walkCycle == 0) {
@@ -321,41 +423,69 @@ public class AnimationPanel extends JPanel {
             fillPixel(g2d, px, py + 7, 1, 2);
             fillPixel(g2d, px + 2, py + 8, 1, 1);
         }
-        
+        // Bottes plus sombres
+        g2d.setColor(new Color(30, 30, 70));
+        fillPixel(g2d, px, py + 9, 1, 1);
+        fillPixel(g2d, px + 2, py + 9, 1, 1);
+
         // Épée
-        g2d.setColor(Color.LIGHT_GRAY);
+        g2d.setColor(new Color(210, 210, 210));
         fillPixel(g2d, px + 3, py + 4, 1, 3);
+        // Garde de l'épée
+        g2d.setColor(new Color(170, 140, 60));
+        fillPixel(g2d, px + 3, py + 6, 1, 1);
     }
+
     
     private void drawEnemy(Graphics2D g2d, int x, int y) {
         int px = x / PIXEL_SIZE;
         int py = y / PIXEL_SIZE;
         
-        // Corps ennemi (rouge)
+        // Ombre
+        g2d.setColor(new Color(0, 0, 0, 60));
+        fillPixel(g2d, px - 1, py + 9, 5, 1);
+
+        // Corps ennemi (rouge) avec ombrage
         g2d.setColor(new Color(150, 50, 50));
         fillPixel(g2d, px, py, 3, 3);
         fillPixel(g2d, px, py + 3, 3, 4);
-        
+        g2d.setColor(new Color(110, 30, 30));
+        fillPixel(g2d, px, py + 3, 1, 4); // ombre côté gauche
+
         // Yeux
         g2d.setColor(Color.YELLOW);
         fillPixel(g2d, px, py + 1, 1, 1);
         fillPixel(g2d, px + 2, py + 1, 1, 1);
-        
+        // Bouche sombre
+        g2d.setColor(new Color(60, 0, 0));
+        fillPixel(g2d, px + 1, py + 2, 1, 1);
+
         // Jambes
         g2d.setColor(new Color(100, 30, 30));
         fillPixel(g2d, px, py + 7, 1, 2);
         fillPixel(g2d, px + 2, py + 7, 1, 2);
+        // Griffes/pieds
+        g2d.setColor(new Color(70, 20, 20));
+        fillPixel(g2d, px, py + 9, 1, 1);
+        fillPixel(g2d, px + 2, py + 9, 1, 1);
     }
     
     private void drawBoss(Graphics2D g2d, int x, int y) {
         int px = x / PIXEL_SIZE;
         int py = y / PIXEL_SIZE;
         
+        // Ombre
+        g2d.setColor(new Color(0, 0, 0, 70));
+        fillPixel(g2d, px - 2, py + 11, 9, 1);
+
         // Corps boss (plus grand et plus sombre)
         g2d.setColor(new Color(80, 0, 0));
         fillPixel(g2d, px - 1, py, 5, 5);
         fillPixel(g2d, px - 1, py + 5, 5, 6);
-        
+        // Ombrage latéral
+        g2d.setColor(new Color(60, 0, 0));
+        fillPixel(g2d, px - 1, py + 1, 1, 9);
+
         // Cornes
         g2d.setColor(Color.BLACK);
         fillPixel(g2d, px - 2, py - 1, 1, 2);
@@ -365,6 +495,9 @@ public class AnimationPanel extends JPanel {
         g2d.setColor(Color.RED);
         fillPixel(g2d, px, py + 2, 1, 1);
         fillPixel(g2d, px + 3, py + 2, 1, 1);
+        // Cuirasse/pectorale claire
+        g2d.setColor(new Color(120, 20, 20));
+        fillPixel(g2d, px, py + 5, 3, 2);
     }
     
     private void drawDungeon(Graphics2D g2d, int x, int y) {
@@ -389,11 +522,37 @@ public class AnimationPanel extends JPanel {
         // Murs
         g2d.setColor(new Color(80, 80, 80));
         g2d.fillRect(0, 0, getWidth(), 400);
-        
-        // Perspective (lignes)
+
+        // Léger dégradé vertical sur les murs pour de la profondeur
+        Paint oldPaint = g2d.getPaint();
+        GradientPaint gp = new GradientPaint(0, 0, new Color(255, 255, 255, 20), 0, 400, new Color(0, 0, 0, 90));
+        g2d.setPaint(gp);
+        g2d.fillRect(0, 0, getWidth(), 400);
+        g2d.setPaint(oldPaint);
+
+        // Motif de briques (joint horizontal + joints verticaux décalés)
+        g2d.setColor(new Color(70, 70, 70));
+        for (int y = 40; y < 400; y += 40) {
+            g2d.drawLine(0, y, getWidth(), y);
+            int offset = ((y / 40) % 2) * 30; // décalage 0/30
+            for (int x = offset; x < getWidth(); x += 60) {
+                g2d.drawLine(x, y - 40, x, y); // petits joints verticaux
+            }
+        }
+
+        // Perspective (lignes) – multiplier les lignes vers le point de fuite
         g2d.setColor(new Color(50, 50, 50));
-        g2d.drawLine(0, 400, 150, 200);
-        g2d.drawLine(getWidth(), 400, 150, 200);
+        int vx = 150, vy = 200; // point de fuite
+        g2d.drawLine(0, 400, vx, vy);
+        g2d.drawLine(getWidth(), 400, vx, vy);
+        for (int i = 1; i <= 6; i++) {
+            int x = (int) ((i / 7.0) * getWidth());
+            g2d.drawLine(x, getHeight(), vx, vy);
+        }
+        // Bandes horizontales sur le sol
+        for (int y = 440; y < getHeight(); y += 40) {
+            g2d.drawLine(0, y, getWidth(), y);
+        }
     }
     
     private void drawCombatBackground(Graphics2D g2d) {
@@ -406,6 +565,10 @@ public class AnimationPanel extends JPanel {
     }
     
     private void drawTorch(Graphics2D g2d, int x, int y, int frame) {
+        // Lueur de torche (avant le support/les flammes)
+        g2d.setColor(new Color(255, 220, 120, 60));
+        g2d.fillOval(x - 30, y - 70, 80, 100);
+
         // Support
         g2d.setColor(new Color(80, 80, 80));
         g2d.fillRect(x, y, 10, 40);
@@ -416,13 +579,6 @@ public class AnimationPanel extends JPanel {
         g2d.fillOval(x - 5, y - flameHeight, 20, flameHeight);
         g2d.setColor(Color.YELLOW);
         g2d.fillOval(x, y - flameHeight + 5, 10, flameHeight - 10);
-    }
-    
-    private void drawSwordSlash(Graphics2D g2d, int x, int y) {
-        g2d.setColor(new Color(255, 255, 255, 150));
-        g2d.setStroke(new BasicStroke(3));
-        int offset = (animationFrame % 15) * 2;
-        g2d.drawArc(x - offset, y - 20, 40, 40, 45, 90);
     }
     
     private void drawStars(Graphics2D g2d) {
@@ -476,19 +632,31 @@ public class AnimationPanel extends JPanel {
     }
 
     private void drawDoor(Graphics2D g2d, int x, int y, int numero) {
-        // Porte en bois
+        // Porte en bois (fond)
         g2d.setColor(new Color(100, 50, 0));
         g2d.fillRect(x, y, 60, 100);
 
-        // Bordure de la porte
+        // Bordure arrondie pour un look plus "joli"
         g2d.setColor(new Color(70, 35, 0));
-        g2d.drawRect(x, y, 60, 100);
+        g2d.drawRoundRect(x, y, 60, 100, 12, 12);
         g2d.drawRect(x + 1, y + 1, 58, 98);
 
         // Planches horizontales
         g2d.setColor(new Color(80, 40, 0));
         for (int i = 0; i < 4; i++) {
             g2d.fillRect(x + 5, y + 20 + i * 20, 50, 3);
+        }
+
+        // Charnières m��talliques
+        g2d.setColor(new Color(60, 40, 10));
+        g2d.fillRect(x + 5, y + 25, 12, 4);
+        g2d.fillRect(x + 5, y + 65, 12, 4);
+
+        // Clous décoratifs
+        g2d.setColor(new Color(160, 130, 60));
+        for (int cx = x + 12; cx <= x + 48; cx += 12) {
+            g2d.fillOval(cx, y + 15, 3, 3);
+            g2d.fillOval(cx, y + 85, 3, 3);
         }
 
         // Poignée
@@ -507,5 +675,10 @@ public class AnimationPanel extends JPanel {
             g2d.setColor(new Color(255, 255, 0, 50));
             g2d.fillOval(x + 15, y + 35, 30, 30);
         }
+
+        // Ombre interne à gauche et en bas
+        g2d.setColor(new Color(0, 0, 0, 40));
+        g2d.fillRect(x + 1, y + 1, 4, 98);
+        g2d.fillRect(x + 1, y + 96, 58, 3);
     }
 }
