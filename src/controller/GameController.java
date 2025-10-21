@@ -18,6 +18,7 @@ public class GameController {
     private final UIService uiService;
     private final GameWindow gameWindow;
     private final ItemService itemService;
+    private final NiveauService niveauService;
 
     public GameController() {
         this.joueurService = new JoueurService();
@@ -26,6 +27,7 @@ public class GameController {
         this.gameWindow = uiService.creerFenetre();
         this.combatService = new CombatService(gameWindow.getGamePanel());
         this.itemService = new ItemService();
+        this.niveauService = new NiveauService();
 
         // Activer un rendu plus précis pour l'animation (2 = HD, 3 = très HD)
         uiService.reglerQualiteAnimation(gameWindow, 2);
@@ -67,8 +69,8 @@ public class GameController {
                     uiService.afficherMessage(gameWindow.getGamePanel(),
                         "Création d'une nouvelle partie...");
                     Joueur nouveauJoueur = joueurService.creerJoueur("Aventurier");
-                    uiService.afficherStats(gameWindow.getGamePanel(),
-                        joueurService.genererStatsJoueur(nouveauJoueur));
+                    gameWindow.setJoueur(nouveauJoueur);
+                    uiService.afficherStatsDetailles(gameWindow.getGamePanel(), nouveauJoueur);
                     return nouveauJoueur;
                 }
 
@@ -83,8 +85,8 @@ public class GameController {
                 if (choix == 0) {
                     uiService.afficherMessage(gameWindow.getGamePanel(),
                         "Sauvegarde chargée : " + joueurSauvegarde.getPseudo());
-                    uiService.afficherStats(gameWindow.getGamePanel(),
-                        joueurService.genererStatsJoueur(joueurSauvegarde));
+                    gameWindow.setJoueur(joueurSauvegarde);
+                    uiService.afficherStatsDetailles(gameWindow.getGamePanel(), joueurSauvegarde);
                     return joueurSauvegarde;
                 }
             } catch (Exception e) {
@@ -96,8 +98,8 @@ public class GameController {
         // Créer un nouveau joueur avec un pseudo par défaut ou demandé
         uiService.afficherMessage(gameWindow.getGamePanel(), "Nouvelle partie créée");
         Joueur joueur = joueurService.creerJoueur("Aventurier");
-        uiService.afficherStats(gameWindow.getGamePanel(),
-            joueurService.genererStatsJoueur(joueur));
+        gameWindow.setJoueur(joueur);
+        uiService.afficherStatsDetailles(gameWindow.getGamePanel(), joueur);
         return joueur;
     }
     
@@ -195,8 +197,7 @@ public class GameController {
             if (!choixValide && joueur.getPv() > 0) {
                 uiService.afficherMessage(gameWindow.getGamePanel(),
                     "Vous revenez à l'embranchement précédent. Choisissez un autre chemin.");
-                uiService.afficherStats(gameWindow.getGamePanel(),
-                    joueurService.genererStatsJoueur(joueur));
+                uiService.afficherStatsDetailles(gameWindow.getGamePanel(), joueur);
             }
         }
 
@@ -259,22 +260,45 @@ public class GameController {
             if (null != messageCombat) {
                 uiService.afficherMessage(gameWindow.getGamePanel(), messageCombat);
                 
+                // ⭐ METTRE À JOUR LES STATS APRÈS CHAQUE COUP ⭐
+                uiService.afficherStatsDetailles(gameWindow.getGamePanel(), joueur);
+
                 if (salle instanceof CombattantSalle && 0 >= ((CombattantSalle)salle).getPv()) {
                     salleFinie = true;
 
                     // Changer la scène en victoire
                     uiService.changerSceneAnimation(gameWindow, ui.AnimationPanel.SceneType.VICTOIRE);
 
+                    // Gagner de l'expérience pour avoir vaincu l'ennemi
+                    boolean estBoss = salle instanceof model.salle.SalleBoss;
+                    int pvEnnemi = pvAvant;
+                    int attaqueEnnemi = ((CombattantSalle)salle).getAttaque();
+                    int xpGagnee = Joueur.calculerXpGagnee(pvEnnemi, attaqueEnnemi, estBoss);
+
+                    String messageXp = niveauService.gagnerExperience(joueur, xpGagnee, gameWindow.getGamePanel());
+                    uiService.afficherMessage(gameWindow.getGamePanel(), messageXp);
+
                     // Donner des items après avoir vaincu l'ennemi ou le boss
                     String messageItem;
-                    if (salle instanceof model.salle.SalleBoss) {
+                    if (estBoss) {
+                        // Afficher notification de victoire contre le boss
+                        if (gameWindow.getGamePanel() instanceof ui.GamePanel) {
+                            ((ui.GamePanel) gameWindow.getGamePanel()).showNotification(
+                                "BOSS VAINCU !",
+                                ui.GamePanel.NotificationType.BOSS_DEFEATED,
+                                4000
+                            );
+                        }
+
                         model.salle.SalleBoss boss = (model.salle.SalleBoss) salle;
                         int difficulte = boss.getAttaque() + 100;
                         messageItem = itemService.donnerItemsBoss(joueur, difficulte);
+                        joueur.incrementerBossVaincus();
                     } else if (salle instanceof model.salle.SalleEnnemi) {
                         model.salle.SalleEnnemi ennemi = (model.salle.SalleEnnemi) salle;
                         int difficulte = ennemi.getAttaque() * 2;
                         messageItem = itemService.donnerItemEnnemi(joueur, difficulte);
+                        joueur.incrementerEnnemisTues();
                     } else {
                         messageItem = null;
                     }
@@ -282,6 +306,9 @@ public class GameController {
                     if (messageItem != null) {
                         uiService.afficherMessage(gameWindow.getGamePanel(), messageItem);
                     }
+
+                    // Mettre à jour les stats avec le niveau et la barre d'XP
+                    uiService.afficherStatsDetailles(gameWindow.getGamePanel(), joueur);
                 } else {
                     // Si l'ennemi est blessé mais toujours vivant
                     if (salle instanceof CombattantSalle) {
@@ -326,13 +353,15 @@ public class GameController {
                         // Vérifier si le joueur veut utiliser un item
                         if (combatService.veutUtiliserItem(decision, aDesItems)) {
                             gererInventaireCombat(joueur);
+                            // ⭐ Mettre à jour les stats après utilisation d'item
+                            uiService.afficherStatsDetailles(gameWindow.getGamePanel(), joueur);
                             // Ne pas terminer la boucle, le joueur continue le combat
                         } else if (combatService.doitFuir(decision, aDesItems)) {
                             // Appliquer les dégâts de retraite
                             String messageRetraite = combatService.appliquerDegatsRetraite(joueur);
                             uiService.afficherMessage(gameWindow.getGamePanel(), messageRetraite);
-                            uiService.afficherStats(gameWindow.getGamePanel(),
-                                joueurService.genererStatsJoueur(joueur));
+                            // ⭐ Mettre à jour les stats après la fuite
+                            uiService.afficherStatsDetailles(gameWindow.getGamePanel(), joueur);
 
                             // Vérifier si le joueur est toujours en vie
                             if (joueur.getPv() <= 0) {
@@ -406,8 +435,7 @@ public class GameController {
                 // Utiliser l'item
                 String messageUtilisation = itemService.utiliserItem(joueur, choix);
                 uiService.afficherMessage(gameWindow.getGamePanel(), messageUtilisation);
-                uiService.afficherStats(gameWindow.getGamePanel(),
-                    joueurService.genererStatsJoueur(joueur));
+                uiService.afficherStatsDetailles(gameWindow.getGamePanel(), joueur);
             }
         }
     }
@@ -423,8 +451,7 @@ public class GameController {
             } else {
                 String messageUtilisation = itemService.utiliserItem(joueur, choix);
                 uiService.afficherMessage(gameWindow.getGamePanel(), messageUtilisation);
-                uiService.afficherStats(gameWindow.getGamePanel(),
-                    joueurService.genererStatsJoueur(joueur));
+                uiService.afficherStatsDetailles(gameWindow.getGamePanel(), joueur);
             }
         }
     }

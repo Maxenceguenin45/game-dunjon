@@ -1,9 +1,11 @@
 package service;
 
 import ui.IGamePanel;
+import ui.GamePanel;
 import ui.GameWindow;
 import ui.AnimationPanel;
 import util.GameMessages;
+import personnage.Joueur;
 
 public class UIService {
     public GameWindow creerFenetre() {
@@ -19,6 +21,23 @@ public class UIService {
     public void afficherStats(IGamePanel panel, String stats) {
         if (null != panel && null != stats) {
             panel.setStats(stats);
+        }
+    }
+
+    /**
+     * Met à jour l'affichage des statistiques détaillées avec la barre de niveau
+     */
+    public void afficherStatsDetailles(IGamePanel panel, Joueur joueur) {
+        if (panel instanceof GamePanel && joueur != null) {
+            GamePanel gamePanel = (GamePanel) panel;
+            gamePanel.setStatsDetailles(
+                joueur.getNiveau(),
+                joueur.getExperience(),
+                joueur.getExperienceRequise(),
+                joueur.getPv(),
+                joueur.getPvMax(),
+                joueur.getAttaque()
+            );
         }
     }
 

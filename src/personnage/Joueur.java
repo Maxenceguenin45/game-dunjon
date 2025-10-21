@@ -16,6 +16,11 @@ public class Joueur implements Personnage {
     private int bossVaincus;
     private Inventaire inventaire;
 
+    // Système d'expérience et de niveau
+    private int niveau;
+    private int experience;
+    private int experienceRequise;
+
     public Joueur(String pseudo, int pvMax, int attaque) {
         this.pseudo = pseudo;
         this.pvMax = pvMax;
@@ -24,6 +29,9 @@ public class Joueur implements Personnage {
         this.ennemisTues = 0;
         this.bossVaincus = 0;
         this.inventaire = new Inventaire();
+        this.niveau = 1;
+        this.experience = 0;
+        this.experienceRequise = 100; // XP nécessaire pour le niveau 2
     }
 
     // Getters
@@ -58,6 +66,18 @@ public class Joueur implements Personnage {
         return inventaire;
     }
 
+    public int getNiveau() {
+        return niveau;
+    }
+
+    public int getExperience() {
+        return experience;
+    }
+
+    public int getExperienceRequise() {
+        return experienceRequise;
+    }
+
     // Setters
     @Override
     public void setPv(int pv) {
@@ -81,6 +101,18 @@ public class Joueur implements Personnage {
         this.bossVaincus = bossVaincus;
     }
 
+    public void setNiveau(int niveau) {
+        this.niveau = niveau;
+    }
+
+    public void setExperience(int experience) {
+        this.experience = experience;
+    }
+
+    public void setExperienceRequise(int experienceRequise) {
+        this.experienceRequise = experienceRequise;
+    }
+
     /**
      * Incrémente le compteur d'ennemis tués
      */
@@ -93,6 +125,60 @@ public class Joueur implements Personnage {
      */
     public void incrementerBossVaincus() {
         this.bossVaincus++;
+    }
+
+    /**
+     * Ajoute de l'expérience au joueur et gère les montées de niveau
+     * @param xp l'expérience à ajouter
+     * @return true si le joueur a gagné au moins un niveau
+     */
+    public boolean gagnerExperience(int xp) {
+        this.experience += xp;
+        boolean aGagneNiveau = false;
+
+        // Gérer les montées de niveaux multiples
+        while (this.experience >= this.experienceRequise) {
+            monterNiveau();
+            aGagneNiveau = true;
+        }
+
+        return aGagneNiveau;
+    }
+
+    /**
+     * Fait monter le joueur d'un niveau et améliore ses stats
+     */
+    private void monterNiveau() {
+        this.niveau++;
+        this.experience -= this.experienceRequise;
+
+        // Calculer l'XP requise pour le prochain niveau (formule exponentielle)
+        this.experienceRequise = (int) (100 * Math.pow(1.5, niveau));
+
+        // Amélioration des stats à chaque niveau
+        int bonusPvMax = 10 + (niveau * 2); // +10, +12, +14, etc.
+        int bonusAttaque = 3 + (niveau / 2); // +3, +3, +4, +4, +5, etc.
+
+        this.pvMax += bonusPvMax;
+        this.pv = this.pvMax; // Soigne complètement à chaque niveau
+        this.attaque += bonusAttaque;
+    }
+
+    /**
+     * Calcule l'XP gagnée en battant un ennemi
+     * @param pvEnnemi les PV de l'ennemi
+     * @param attaqueEnnemi l'attaque de l'ennemi
+     * @param estBoss true si c'est un boss
+     * @return l'XP gagnée
+     */
+    public static int calculerXpGagnee(int pvEnnemi, int attaqueEnnemi, boolean estBoss) {
+        int xpBase = pvEnnemi + (attaqueEnnemi * 2);
+
+        if (estBoss) {
+            xpBase *= 3; // Les boss donnent 3x plus d'XP
+        }
+
+        return xpBase;
     }
 
     /**
@@ -110,10 +196,25 @@ public class Joueur implements Personnage {
             int ennemisTues = Integer.parseInt(reader.readLine());
             int bossVaincus = Integer.parseInt(reader.readLine());
 
+            // Charger les nouvelles données d'XP et niveau (compatibilité avec anciennes sauvegardes)
+            int niveau = 1;
+            int experience = 0;
+            int experienceRequise = 100;
+
+            String niveauLine = reader.readLine();
+            if (niveauLine != null && !niveauLine.isEmpty()) {
+                niveau = Integer.parseInt(niveauLine);
+                experience = Integer.parseInt(reader.readLine());
+                experienceRequise = Integer.parseInt(reader.readLine());
+            }
+
             Joueur joueur = new Joueur(pseudo, pvMax, attaque);
             joueur.setPv(pv);
             joueur.setEnnemisTues(ennemisTues);
             joueur.setBossVaincus(bossVaincus);
+            joueur.setNiveau(niveau);
+            joueur.setExperience(experience);
+            joueur.setExperienceRequise(experienceRequise);
 
             return joueur;
         }
@@ -138,12 +239,19 @@ public class Joueur implements Personnage {
             writer.newLine();
             writer.write(String.valueOf(bossVaincus));
             writer.newLine();
+            // Sauvegarder les données d'XP et niveau
+            writer.write(String.valueOf(niveau));
+            writer.newLine();
+            writer.write(String.valueOf(experience));
+            writer.newLine();
+            writer.write(String.valueOf(experienceRequise));
+            writer.newLine();
         }
     }
 
     @Override
     public String toString() {
-        return String.format("%s (PV: %d/%d, ATK: %d)", pseudo, pv, pvMax, attaque);
+        return String.format("%s (Niv.%d PV: %d/%d, ATK: %d, XP: %d/%d)",
+            pseudo, niveau, pv, pvMax, attaque, experience, experienceRequise);
     }
 }
-

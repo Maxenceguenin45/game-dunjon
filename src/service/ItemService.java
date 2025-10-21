@@ -1,7 +1,7 @@
 package service;
 
-import model.Item;
-import model.Item.TypeItem;
+import item.Item;
+import item.ItemFactory;
 import personnage.Joueur;
 
 import java.util.Random;
@@ -11,9 +11,11 @@ import java.util.Random;
  */
 public class ItemService {
     private final Random random;
+    private final ItemFactory itemFactory;
 
     public ItemService() {
         this.random = new Random();
+        this.itemFactory = new ItemFactory(random);
     }
 
     /**
@@ -22,17 +24,17 @@ public class ItemService {
      * @return Un item aléatoire
      */
     public Item genererItemAleatoire() {
-        int type = random.nextInt(3);
-        switch (type) {
-            case 0:
-                return new Item("Potion de soin", TypeItem.POTION_SOIN, 30);
-            case 1:
-                return new Item("Potion de force", TypeItem.POTION_FORCE, 5);
-            case 2:
-                return new Item("Armure légère", TypeItem.ARMURE, 20);
-            default:
-                return new Item("Potion de soin", TypeItem.POTION_SOIN, 20);
-        }
+        return itemFactory.genererItemAleatoire();
+    }
+
+    /**
+     * Génère un item aléatoire selon la rareté
+     *
+     * @param rarete la rareté minimale de l'item
+     * @return Un item aléatoire
+     */
+    public Item genererItemAleatoire(Item.Rarete rarete) {
+        return itemFactory.genererItemAleatoire(rarete);
     }
 
     /**
@@ -43,6 +45,9 @@ public class ItemService {
      * @return Message indiquant l'item reçu
      */
     public String donnerItemEnnemi(Joueur joueur, int difficulte) {
+        // Déterminer la rareté selon la difficulté
+        Item.Rarete rarete = itemFactory.determinerRarete(difficulte, false);
+
         // Plus l'ennemi est difficile, plus on a de chances d'avoir plusieurs items
         int nbItems = 1;
         if (difficulte > 100) {
@@ -56,8 +61,8 @@ public class ItemService {
         int itemsRecus = 0;
 
         for (int i = 0; i < nbItems; i++) {
-            Item item = genererItemAleatoire();
-            if (joueur.getInventaire().ajouterItem(item)) {
+            Item item = itemFactory.genererItemAleatoire(rarete);
+            if (joueur.getInventaire().ajouterItem(adaptItemToModel(item))) {
                 if (itemsRecus == 0) {
                     message.append("L'ennemi a laissé tomber : ").append(item.getNom());
                 } else {
@@ -83,6 +88,9 @@ public class ItemService {
      * @return Message indiquant les items reçus
      */
     public String donnerItemsBoss(Joueur joueur, int difficulte) {
+        // Déterminer la rareté selon la difficulté du boss
+        Item.Rarete rarete = itemFactory.determinerRarete(difficulte, true);
+
         // Plus le boss est difficile, plus il donne d'items
         int nbItemsBase = 1 + random.nextInt(3); // 1 à 3 items de base
 
@@ -95,9 +103,9 @@ public class ItemService {
         int itemsRecus = 0;
 
         for (int i = 0; i < nbItemsBase; i++) {
-            Item item = genererItemAleatoire();
-            if (joueur.getInventaire().ajouterItem(item)) {
-                message.append("- ").append(item.getNom()).append("\n");
+            Item item = itemFactory.genererItemAleatoire(rarete);
+            if (joueur.getInventaire().ajouterItem(adaptItemToModel(item))) {
+                message.append("- ").append(item.getNom()).append(" [").append(item.getRarete().getNom()).append("]\n");
                 itemsRecus++;
             } else {
                 message.append("- ").append(item.getNom()).append(" (inventaire plein)\n");
@@ -119,11 +127,11 @@ public class ItemService {
      * @return Message décrivant l'utilisation de l'item
      */
     public String utiliserItem(Joueur joueur, int indexItem) {
-        Item item = joueur.getInventaire().retirerItem(indexItem);
-        if (item == null) {
+        model.Item oldItem = joueur.getInventaire().retirerItem(indexItem);
+        if (oldItem == null) {
             return "Item invalide.";
         }
-        return item.utiliser(joueur);
+        return oldItem.utiliser(joueur);
     }
 
     /**
@@ -141,11 +149,59 @@ public class ItemService {
         String[] descriptions = new String[nbItems + 1];
         
         for (int i = 0; i < nbItems; i++) {
-            Item item = joueur.getInventaire().getItem(i);
+            model.Item item = joueur.getInventaire().getItem(i);
             descriptions[i] = "Utiliser : " + item.toString();
         }
         descriptions[nbItems] = "Retour";
         
         return descriptions;
+    }
+
+    /**
+     * Adapte un item du nouveau package item vers l'ancien model.Item
+     * (méthode de compatibilité temporaire)
+     */
+    private model.Item adaptItemToModel(Item newItem) {
+        // Convertir le nouvel item en ancien format pour la compatibilité avec l'inventaire
+        model.Item.TypeItem type = model.Item.TypeItem.POTION_SOIN; // valeur par défaut
+        int valeur = 0;
+
+        // Déterminer le type en fonction du nom/description
+        String nom = newItem.getNom().toLowerCase();
+        if (nom.contains("soin") || nom.contains("potion de soin")) {
+            type = model.Item.TypeItem.POTION_SOIN;
+            valeur = extraireValeurSoin(nom);
+        } else if (nom.contains("force") || nom.contains("rage")) {
+            type = model.Item.TypeItem.POTION_FORCE;
+            valeur = extraireValeurForce(nom);
+        } else if (nom.contains("armure")) {
+            type = model.Item.TypeItem.ARMURE;
+            valeur = extraireValeurArmure(nom);
+        }
+
+        return new model.Item(newItem.getNom(), type, valeur);
+    }
+
+    private int extraireValeurSoin(String nom) {
+        if (nom.contains("petite")) return 30;
+        if (nom.contains("grande")) return 80;
+        if (nom.contains("totale")) return 9999;
+        return 50; // moyenne par défaut
+    }
+
+    private int extraireValeurForce(String nom) {
+        if (nom.contains("petite")) return 5;
+        if (nom.contains("grande")) return 20;
+        if (nom.contains("rage")) return 50;
+        return 10; // moyenne par défaut
+    }
+
+    private int extraireValeurArmure(String nom) {
+        if (nom.contains("cuir")) return 20;
+        if (nom.contains("fer")) return 40;
+        if (nom.contains("acier")) return 60;
+        if (nom.contains("enchantée")) return 80;
+        if (nom.contains("dragon") || nom.contains("légendaire")) return 150;
+        return 40; // valeur par défaut
     }
 }
