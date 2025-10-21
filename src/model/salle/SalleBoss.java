@@ -1,6 +1,10 @@
-public class SalleBoss implements Salle {
+package model.salle;
+
+import model.Joueur;
+
+public class SalleBoss implements Salle, CombattantSalle {
     private int pv;
-    private int attaque;
+    private final int attaque;
 
     public SalleBoss(int pv, int attaque) {
         this.pv = pv;
@@ -9,19 +13,26 @@ public class SalleBoss implements Salle {
 
     @Override
     public void entrer(Joueur joueur) {
-        // Combat simple : le joueur attaque en premier
+        // Combat avec le boss : le joueur attaque en premier
         pv -= joueur.getAttaque();
         if (pv > 0) {
+            // Le boss fait plus de dégâts qu'un ennemi normal
             joueur.setPv(joueur.getPv() - attaque);
         }
     }
 
     @Override
     public String getDescription() {
-        return "Le boss surgit ! PV : " + pv + ", ATK : " + attaque;
+        return "";
     }
 
+    @Override
     public int getPv() {
         return pv;
+    }
+
+    @Override
+    public int getAttaque() {
+        return attaque;
     }
 }

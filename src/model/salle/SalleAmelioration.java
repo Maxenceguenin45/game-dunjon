@@ -1,3 +1,7 @@
+package model.salle;
+
+import model.Joueur;
+
 public class SalleAmelioration implements Salle {
     @Override
     public void entrer(Joueur joueur) {

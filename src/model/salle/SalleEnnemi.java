@@ -1,4 +1,8 @@
-public class SalleEnnemi implements Salle {
+package model.salle;
+
+import model.Joueur;
+
+public class SalleEnnemi implements Salle, CombattantSalle {
     private int pv;
     private final int attaque;
 
@@ -16,12 +20,17 @@ public class SalleEnnemi implements Salle {
         }
     }
 
-    @Override
     public String getDescription() {
         return "Un ennemi apparaît ! PV : " + pv + ", ATK : " + attaque;
     }
 
+    @Override
     public int getPv() {
         return pv;
+    }
+
+    @Override
+    public int getAttaque() {
+        return attaque;
     }
 }

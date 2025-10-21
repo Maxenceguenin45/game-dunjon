@@ -1,3 +1,7 @@
+package service;
+
+import model.Joueur;
+
 public class EnnemiService {
     public static void combattre(Joueur joueur, int pvEnnemi, int attaqueEnnemi) {
         // Le joueur attaque en premier

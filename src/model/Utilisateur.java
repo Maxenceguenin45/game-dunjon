@@ -1,3 +1,5 @@
+package model;
+
 public class Utilisateur {
     private String mail;
     private String nom;
