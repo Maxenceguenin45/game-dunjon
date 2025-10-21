@@ -24,32 +24,55 @@ public class ItemFactory {
     /**
      * Génère un item aléatoire selon la rareté
      * @param rarete la rareté minimale de l'item
+     * @param estBoss true si c'est pour un boss
      * @return un item aléatoire
      */
-    public Item genererItemAleatoire(Item.Rarete rarete) {
-        int type = random.nextInt(5); // 5 types d'items
-        
-        switch (type) {
-            case 0: // Potion de soin
-                return genererPotionSoin(rarete);
-            case 1: // Potion de force
-                return genererPotionForce(rarete);
-            case 2: // Arme
+    public Item genererItemAleatoire(Item.Rarete rarete, boolean estBoss) {
+        if (estBoss) {
+            // Boss : Plus de chances d'avoir des armes et armures
+            int type = random.nextInt(100);
+
+            if (type < 50) { // 50% d'armes
                 return genererArme(rarete);
-            case 3: // Armure
+            } else if (type < 70) { // 20% d'armures
                 return genererArmure(rarete);
-            case 4: // Item spécial
+            } else if (type < 85) { // 15% de potions de force
+                return genererPotionForce(rarete);
+            } else if (type < 95) { // 10% de potions de soin
+                return genererPotionSoin(rarete);
+            } else { // 5% d'items spéciaux
                 return genererItemSpecial(rarete);
-            default:
+            }
+        } else {
+            // Ennemi normal : Surtout des potions et armes communes
+            int type = random.nextInt(100);
+
+            if (type < 30) { // 30% d'armes COMMUNES UNIQUEMENT
+                return genererArme(Item.Rarete.COMMUN);
+            } else if (type < 50) { // 20% de potions de soin
+                return genererPotionSoin(rarete);
+            } else if (type < 65) { // 15% de potions de force
+                return genererPotionForce(rarete);
+            } else if (type < 75) { // 10% d'armures communes
+                return genererArmure(Item.Rarete.COMMUN);
+            } else { // 25% de petites potions
                 return PotionSoin.petite();
+            }
         }
     }
 
     /**
-     * Génère un item aléatoire de rareté commune
+     * Génère un item aléatoire de rareté commune (pour compatibilité)
      */
     public Item genererItemAleatoire() {
-        return genererItemAleatoire(Item.Rarete.COMMUN);
+        return genererItemAleatoire(Item.Rarete.COMMUN, false);
+    }
+
+    /**
+     * Génère un item aléatoire selon la rareté (pour compatibilité)
+     */
+    public Item genererItemAleatoire(Item.Rarete rarete) {
+        return genererItemAleatoire(rarete, false);
     }
 
     /**

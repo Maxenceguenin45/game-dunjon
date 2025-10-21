@@ -10,21 +10,28 @@ public class GameWindow extends JFrame {
     private final GamePanel gamePanel;
     private final AnimationPanel animationPanel;
     private final InventairePanel inventairePanel;
+    private final ArmePanel armePanel;
+
+    // Fenêtres séparées pour l'inventaire et l'arme
+    private JFrame inventaireWindow;
+    private JFrame armeWindow;
+
     private volatile boolean choiceValidated;
     private volatile int currentChoice;
     private volatile int maxChoices;
     private volatile boolean saveAndQuitRequested;
     private boolean inventaireVisible = false;
     private int inventaireSelectedIndex = 0;
-    private boolean inventaireBloque = false; // Bloquer l'inventaire pendant le combat
+    private boolean inventaireBloque = false;
 
     public GameWindow() {
         setTitle("Dungeon Game");
         this.gamePanel = new GamePanel();
         this.animationPanel = new AnimationPanel();
         this.inventairePanel = new InventairePanel();
+        this.armePanel = new ArmePanel();
 
-        // Layout avec le texte à gauche, l'animation au centre-droit et l'inventaire par-dessus
+        // Layout principal
         setLayout(new BorderLayout());
 
         // Panel principal avec gamePanel et animationPanel
@@ -32,31 +39,70 @@ public class GameWindow extends JFrame {
         mainPanel.add(gamePanel, BorderLayout.CENTER);
         mainPanel.add(animationPanel, BorderLayout.EAST);
 
-        // Ajouter le panel principal
         add(mainPanel, BorderLayout.CENTER);
 
-        // Ajouter l'inventaire en overlay (LayeredPane)
-        JLayeredPane layeredPane = new JLayeredPane();
-        layeredPane.setPreferredSize(new Dimension(800, 600));
-
-        mainPanel.setBounds(0, 0, 800, 600);
-        inventairePanel.setBounds(200, 50, 400, 500);
-        inventairePanel.setVisible(false);
-
-        layeredPane.add(mainPanel, Integer.valueOf(0));
-        layeredPane.add(inventairePanel, Integer.valueOf(1));
-
-        setContentPane(layeredPane);
-
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        pack();
+        setSize(800, 600);
         setLocationRelativeTo(null);
+
+        // Créer les fenêtres séparées pour l'inventaire et l'arme
+        creerFenetresInventaire();
+
         setupKeyListener();
         setVisible(true);
     }
 
+    private void creerFenetresInventaire() {
+        // Fenêtre pour l'inventaire
+        inventaireWindow = new JFrame("Inventaire");
+        inventaireWindow.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+        inventaireWindow.setUndecorated(false); // Avec bordures
+        inventaireWindow.setResizable(false);
+        inventaireWindow.add(inventairePanel);
+        inventaireWindow.pack();
+        inventaireWindow.setSize(420, 520);
+
+        // Fenêtre pour l'arme
+        armeWindow = new JFrame("Arme Équipée");
+        armeWindow.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+        armeWindow.setUndecorated(false);
+        armeWindow.setResizable(false);
+        armeWindow.add(armePanel);
+        armeWindow.pack();
+        armeWindow.setSize(300, 420);
+
+        // Positionner les fenêtres à droite de la fenêtre principale
+        positionnerFenetresInventaire();
+
+        // Cacher initialement
+        inventaireWindow.setVisible(false);
+        armeWindow.setVisible(false);
+
+        // Rendre les panneaux visibles
+        inventairePanel.setVisible(true);
+        armePanel.setVisible(true);
+    }
+
+    private void positionnerFenetresInventaire() {
+        // Obtenir la position de la fenêtre principale
+        Point mainLocation = getLocation();
+        int mainWidth = getWidth();
+
+        // Positionner l'inventaire à droite de la fenêtre principale
+        inventaireWindow.setLocation(
+            mainLocation.x + mainWidth + 10,
+            mainLocation.y + 50
+        );
+
+        // Positionner le panneau d'arme en dessous de l'inventaire
+        armeWindow.setLocation(
+            mainLocation.x + mainWidth + 10,
+            mainLocation.y + 50 + inventaireWindow.getHeight() + 10
+        );
+    }
+
     private void setupKeyListener() {
-        addKeyListener(new KeyAdapter() {
+        KeyAdapter keyListener = new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
                 // Gestion de l'inventaire avec la touche I (sauf si bloqué pendant le combat)
@@ -101,7 +147,13 @@ public class GameWindow extends JFrame {
                         break;
                 }
             }
-        });
+        };
+
+        addKeyListener(keyListener);
+        // Ajouter aussi le listener aux fenêtres d'inventaire
+        inventaireWindow.addKeyListener(keyListener);
+        armeWindow.addKeyListener(keyListener);
+
         setFocusable(true);
         requestFocus();
     }
@@ -162,25 +214,40 @@ public class GameWindow extends JFrame {
 
                 inventairePanel.setSelectedIndex(inventaireSelectedIndex);
                 inventairePanel.repaint();
+                armePanel.repaint(); // Rafraîchir le panneau d'arme aussi
             }
         }
     }
 
     private void toggleInventaire() {
         inventaireVisible = !inventaireVisible;
-        inventairePanel.setVisible(inventaireVisible);
 
         if (inventaireVisible) {
-            // Réinitialiser la sélection au premier item
+            // Repositionner les fenêtres au cas où la fenêtre principale aurait bougé
+            positionnerFenetresInventaire();
+
             inventaireSelectedIndex = 0;
             inventairePanel.setSelectedIndex(inventaireSelectedIndex);
-        }
 
-        repaint();
+            // Afficher les fenêtres
+            inventaireWindow.setVisible(true);
+            armeWindow.setVisible(true);
+
+            // Donner le focus à la fenêtre d'inventaire
+            inventaireWindow.requestFocus();
+        } else {
+            // Cacher les fenêtres
+            inventaireWindow.setVisible(false);
+            armeWindow.setVisible(false);
+
+            // Remettre le focus sur la fenêtre principale
+            this.requestFocus();
+        }
     }
 
     public void setJoueur(Joueur joueur) {
         inventairePanel.setJoueur(joueur);
+        armePanel.setJoueur(joueur);
     }
 
     public IGamePanel getGamePanel() {
@@ -239,8 +306,9 @@ public class GameWindow extends JFrame {
         if (bloquer && inventaireVisible) {
             // Fermer l'inventaire s'il est ouvert
             inventaireVisible = false;
-            inventairePanel.setVisible(false);
-            repaint();
+            inventaireWindow.setVisible(false);
+            armeWindow.setVisible(false);
+            this.requestFocus();
         }
     }
 }

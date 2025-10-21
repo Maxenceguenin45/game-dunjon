@@ -1,6 +1,7 @@
 package service;
 
 import personnage.Joueur;
+import item.arme.Epee;
 
 import java.io.File;
 import java.io.IOException;
@@ -9,7 +10,13 @@ public class JoueurService {
     private static final String SAVE_FILE = "save.txt";
 
     public Joueur creerJoueur(String pseudo) {
-        return new Joueur(pseudo, 100, 20);
+        Joueur joueur = new Joueur(pseudo, 100, 20);
+
+        // Donner une épée de départ au joueur
+        Epee epeeDepart = Epee.debutant();
+        joueur.setArmeEquipee(epeeDepart);
+
+        return joueur;
     }
 
     public boolean sauvegardeExiste() {

@@ -10,8 +10,8 @@ import ui.GameWindow;
  * Contrôleur principal du jeu gérant la logique de déroulement d'une partie.
  */
 public class GameController {
-    private static final int MAX_SALLES = 10;
-    
+    private static final int MAX_SALLES = 50;
+
     private final JoueurService joueurService;
     private final SalleService salleService;
     private final CombatService combatService;

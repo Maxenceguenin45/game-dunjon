@@ -45,26 +45,26 @@ public class ItemService {
      * @return Message indiquant l'item reçu
      */
     public String donnerItemEnnemi(Joueur joueur, int difficulte) {
-        // Déterminer la rareté selon la difficulté
-        Item.Rarete rarete = itemFactory.determinerRarete(difficulte, false);
+        // Pour les ennemis normaux, FORCER la rareté COMMUNE
+        Item.Rarete rarete = Item.Rarete.COMMUN;
 
-        // Plus l'ennemi est difficile, plus on a de chances d'avoir plusieurs items
+        // Les ennemis normaux donnent généralement 1 item
         int nbItems = 1;
-        if (difficulte > 100) {
-            // Ennemi très difficile : 30% de chance d'avoir un 2ᵉ item
-            if (random.nextInt(100) < 30) {
-                nbItems = 2;
-            }
+
+        // Ennemi difficile : 20% de chance d'avoir un 2ᵉ item
+        if (difficulte > 80 && random.nextInt(100) < 20) {
+            nbItems = 2;
         }
 
         StringBuilder message = new StringBuilder();
         int itemsRecus = 0;
 
         for (int i = 0; i < nbItems; i++) {
-            Item item = itemFactory.genererItemAleatoire(rarete);
+            // Utiliser la nouvelle méthode avec estBoss = false
+            Item item = itemFactory.genererItemAleatoire(rarete, false);
             if (joueur.getInventaire().ajouterItem(adaptItemToModel(item))) {
                 if (itemsRecus == 0) {
-                    message.append("L'ennemi a laissé tomber : ").append(item.getNom());
+                    message.append("💀 L'ennemi a laissé tomber : ").append(item.getNom());
                 } else {
                     message.append(" et ").append(item.getNom());
                 }
@@ -88,27 +88,28 @@ public class ItemService {
      * @return Message indiquant les items reçus
      */
     public String donnerItemsBoss(Joueur joueur, int difficulte) {
-        // Déterminer la rareté selon la difficulté du boss
+        // Boss : Déterminer la rareté selon la difficulté (RARE, ÉPIQUE, LÉGENDAIRE)
         Item.Rarete rarete = itemFactory.determinerRarete(difficulte, true);
 
-        // Plus le boss est difficile, plus il donne d'items
-        int nbItemsBase = 1 + random.nextInt(3); // 1 à 3 items de base
+        // Boss donne 2 à 4 items garantis
+        int nbItemsBase = 2 + random.nextInt(3); // 2 à 4 items
 
         // Boss très difficile : +1 item bonus
-        if (difficulte > 200) {
+        if (difficulte > 250) {
             nbItemsBase++;
         }
 
-        StringBuilder message = new StringBuilder("Le boss a laissé tomber :\n");
+        StringBuilder message = new StringBuilder("🏆 Le boss a laissé tomber :\n");
         int itemsRecus = 0;
 
         for (int i = 0; i < nbItemsBase; i++) {
-            Item item = itemFactory.genererItemAleatoire(rarete);
+            // Utiliser la nouvelle méthode avec estBoss = true
+            Item item = itemFactory.genererItemAleatoire(rarete, true);
             if (joueur.getInventaire().ajouterItem(adaptItemToModel(item))) {
-                message.append("- ").append(item.getNom()).append(" [").append(item.getRarete().getNom()).append("]\n");
+                message.append("• ").append(item.getNom()).append(" [").append(item.getRarete().getNom()).append("]\n");
                 itemsRecus++;
             } else {
-                message.append("- ").append(item.getNom()).append(" (inventaire plein)\n");
+                message.append("• ").append(item.getNom()).append(" (inventaire plein)\n");
             }
         }
 
