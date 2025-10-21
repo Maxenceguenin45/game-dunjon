@@ -1,6 +1,6 @@
 package model.salle;
 
-import model.Joueur;
+import personnage.Joueur;
 
 /**
  * Interface de base pour toutes les salles du donjon

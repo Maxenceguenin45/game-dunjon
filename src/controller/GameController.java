@@ -1,8 +1,8 @@
 package controller;
 
-import model.Joueur;
 import model.salle.Salle;
 import model.salle.CombattantSalle;
+import personnage.Joueur;
 import service.*;
 import ui.GameWindow;
 

@@ -1,6 +1,7 @@
 package service;
 
-import model.Joueur;
+import personnage.Joueur;
+
 import java.io.File;
 import java.io.IOException;
 

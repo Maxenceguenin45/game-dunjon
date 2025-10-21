@@ -1,6 +1,6 @@
 package model.salle;
 
-import model.Joueur;
+import personnage.Joueur;
 
 public class SalleSoin implements Salle {
     @Override

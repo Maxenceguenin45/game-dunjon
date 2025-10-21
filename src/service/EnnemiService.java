@@ -1,6 +1,6 @@
 package service;
 
-import model.Joueur;
+import personnage.Joueur;
 
 public class EnnemiService {
     public static void combattre(Joueur joueur, int pvEnnemi, int attaqueEnnemi) {

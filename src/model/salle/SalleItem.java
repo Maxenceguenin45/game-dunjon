@@ -1,7 +1,7 @@
 package model.salle;
 
 import model.Item;
-import model.Joueur;
+import personnage.Joueur;
 
 /**
  * Salle contenant un item à récupérer.

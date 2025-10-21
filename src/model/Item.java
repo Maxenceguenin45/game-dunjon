@@ -1,5 +1,7 @@
 package model;
 
+import personnage.Joueur;
+
 /**
  * Classe représentant un item dans le jeu.
  */

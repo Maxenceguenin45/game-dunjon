@@ -1,8 +1,8 @@
 package service;
 
 import model.Item;
-import model.Joueur;
 import model.Item.TypeItem;
+import personnage.Joueur;
 
 import java.util.Random;
 

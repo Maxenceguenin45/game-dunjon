@@ -1,6 +1,6 @@
 package model.salle;
 
-import model.Joueur;
+import personnage.Joueur;
 
 public class SalleEnnemi implements Salle, CombattantSalle {
     private int pv;

@@ -1,8 +1,13 @@
-package model;
+package personnage;
+
+import model.Inventaire;
 
 import java.io.*;
 
-public class Joueur {
+/**
+ * Représente le joueur dans le jeu
+ */
+public class Joueur implements Personnage {
     private String pseudo;
     private int pv;
     private int pvMax;
@@ -21,20 +26,81 @@ public class Joueur {
         this.inventaire = new Inventaire();
     }
 
-    public String getPseudo() { return pseudo; }
-    public int getPv() { return pv; }
-    public int getPvMax() { return pvMax; }
-    public int getAttaque() { return attaque; }
-    public int getEnnemisTues() { return ennemisTues; }
-    public int getBossVaincus() { return bossVaincus; }
-    public Inventaire getInventaire() { return inventaire; }
+    // Getters
+    public String getPseudo() {
+        return pseudo;
+    }
 
-    public void setPv(int pv) { this.pv = Math.min(pv, pvMax); }
-    public void setPvMax(int pvMax) { this.pvMax = pvMax; }
-    public void setAttaque(int attaque) { this.attaque = attaque; }
-    public void setEnnemisTues(int ennemisTues) { this.ennemisTues = ennemisTues; }
-    public void setBossVaincus(int bossVaincus) { this.bossVaincus = bossVaincus; }
+    @Override
+    public int getPv() {
+        return pv;
+    }
 
+    @Override
+    public int getPvMax() {
+        return pvMax;
+    }
+
+    @Override
+    public int getAttaque() {
+        return attaque;
+    }
+
+    public int getEnnemisTues() {
+        return ennemisTues;
+    }
+
+    public int getBossVaincus() {
+        return bossVaincus;
+    }
+
+    public Inventaire getInventaire() {
+        return inventaire;
+    }
+
+    // Setters
+    @Override
+    public void setPv(int pv) {
+        this.pv = Math.min(pv, pvMax);
+    }
+
+    public void setPvMax(int pvMax) {
+        this.pvMax = pvMax;
+    }
+
+    @Override
+    public void setAttaque(int attaque) {
+        this.attaque = attaque;
+    }
+
+    public void setEnnemisTues(int ennemisTues) {
+        this.ennemisTues = ennemisTues;
+    }
+
+    public void setBossVaincus(int bossVaincus) {
+        this.bossVaincus = bossVaincus;
+    }
+
+    /**
+     * Incrémente le compteur d'ennemis tués
+     */
+    public void incrementerEnnemisTues() {
+        this.ennemisTues++;
+    }
+
+    /**
+     * Incrémente le compteur de boss vaincus
+     */
+    public void incrementerBossVaincus() {
+        this.bossVaincus++;
+    }
+
+    /**
+     * Charge un joueur depuis un fichier
+     * @param filename le nom du fichier
+     * @return le joueur chargé
+     * @throws IOException si une erreur d'I/O se produit
+     */
     public static Joueur loadFromFile(String filename) throws IOException {
         try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
             String pseudo = reader.readLine();
@@ -53,6 +119,11 @@ public class Joueur {
         }
     }
 
+    /**
+     * Sauvegarde le joueur dans un fichier
+     * @param filename le nom du fichier
+     * @throws IOException si une erreur d'I/O se produit
+     */
     public void saveToFile(String filename) throws IOException {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
             writer.write(pseudo);
@@ -69,4 +140,10 @@ public class Joueur {
             writer.newLine();
         }
     }
+
+    @Override
+    public String toString() {
+        return String.format("%s (PV: %d/%d, ATK: %d)", pseudo, pv, pvMax, attaque);
+    }
 }
+

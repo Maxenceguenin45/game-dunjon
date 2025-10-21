@@ -1,5 +1,6 @@
 package service;
 
+import personnage.Joueur;
 import ui.IGamePanel;
 import util.GameConstants;
 import util.GameMessages;
@@ -74,7 +75,7 @@ public class CombatService {
      * @param joueur Le joueur qui fuit
      * @return Message décrivant la fuite
      */
-    public String appliquerDegatsRetraite(model.Joueur joueur) {
+    public String appliquerDegatsRetraite(Joueur joueur) {
         int degatsRetraite = 10;
         joueur.setPv(joueur.getPv() - degatsRetraite);
         return "Vous battez en retraite ! Vous perdez " + degatsRetraite + " PV en fuyant.";
