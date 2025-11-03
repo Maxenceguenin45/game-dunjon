@@ -1,0 +1,142 @@
+:root {
+    --bg-color: #1a1a1a;
+    --panel-bg: #2a2a2a;
+    --border-color: #444444;
+    --text-color: #ffffff;
+    --title-color: #ffd700;
+    --health-color: #ff3232;
+    --mana-color: #3232ff;
+    --gold-color: #ffd700;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: 'Press Start 2P', monospace;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.game-container {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    background-color: var(--panel-bg);
+    border-radius: 8px;
+}
+
+.game-left {
+    flex: 3;
+    display: flex;
+    flex-direction: column;
+}
+
+.game-right {
+    flex: 1;
+    min-width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.game-title {
+    color: var(--title-color);
+    text-align: center;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.animation-panel {
+    border: 2px solid var(--border-color);
+    height: 500px;
+    background-color: var(--bg-color);
+    position: relative;
+}
+
+.stats-panel {
+    background-color: var(--bg-color);
+    border: 2px solid #00ff00;
+    padding: 1rem;
+    border-radius: 4px;
+}
+
+.health-bar, .mana-bar {
+    width: 100%;
+    height: 20px;
+    background-color: #333;
+    margin: 5px 0;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.health-bar > div {
+    background-color: var(--health-color);
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.mana-bar > div {
+    background-color: var(--mana-color);
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.message-panel {
+    background-color: var(--bg-color);
+    border: 2px solid #00ccff;
+    padding: 1rem;
+    height: 200px;
+    overflow-y: auto;
+    border-radius: 4px;
+}
+
+.message {
+    margin: 5px 0;
+    font-size: 0.8rem;
+}
+
+.choices-panel {
+    background-color: var(--bg-color);
+    border: 2px solid #ff6600;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    border-radius: 4px;
+}
+
+.choice-button {
+    background-color: #444;
+    border: none;
+    color: var(--text-color);
+    padding: 0.5rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 4px;
+    font-family: 'Press Start 2P', monospace;
+    transition: background-color 0.2s;
+}
+
+.choice-button:hover {
+    background-color: #555;
+}
+
+.choice-button:active {
+    background-color: #666;
+}
+
+/* Pixel art styles */
+.pixel-border {
+    image-rendering: pixelated;
+    box-shadow: 0 0 0 2px #000;
+}
+
+/* Animations */
+@keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
