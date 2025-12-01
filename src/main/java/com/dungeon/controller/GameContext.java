@@ -1,10 +1,12 @@
 package com.dungeon.controller;
 
 import com.dungeon.controller.state.GameState;
+import com.dungeon.model.Marche;
 import com.dungeon.model.personnage.Joueur;
 import com.dungeon.model.salle.Salle;
 import com.dungeon.service.*;
-import com.dungeon.ui.GameUI;
+import com.dungeon.ui.core.GameUI;
+import javafx.application.Platform;
 
 /**
  * Contexte du jeu qui maintient l'état actuel et les services
@@ -28,6 +30,9 @@ public class GameContext {
     private int nbChemins;
     private int pvEnnemiAvantAction;
     
+    // Système de marché
+    private final Marche marche;
+
     public GameContext(GameUI gameUI) {
         this.gameUI = gameUI;
         this.joueurService = new JoueurService();
@@ -37,18 +42,24 @@ public class GameContext {
         this.niveauService = new NiveauService();
         this.uiService = new UIService(gameUI);
         this.sallesParcourues = 0;
+        this.marche = new Marche();
     }
     
     /**
      * Change l'état du jeu
      */
-    public void setState(GameState newState) {
-        if (currentState != null) {
-            currentState.exit(this);
-        }
-        currentState = newState;
-        if (currentState != null) {
+    public void setState(final GameState newState) {
+        if (newState == null) return;
+
+        try {
+            if (currentState != null) {
+                currentState.exit(this);
+            }
+            currentState = newState;
             currentState.enter(this);
+        } catch (Exception e) {
+            System.err.println("Erreur lors du changement d'état: " + e.getMessage());
+            e.printStackTrace();
         }
     }
     
@@ -94,6 +105,10 @@ public class GameContext {
         return uiService;
     }
     
+    public Marche getMarche() {
+        return marche;
+    }
+
     public Joueur getJoueur() {
         return joueur;
     }

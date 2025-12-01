@@ -2,93 +2,105 @@ package com.dungeon.controller.state;
 
 import com.dungeon.controller.GameContext;
 import com.dungeon.model.personnage.Joueur;
-import com.dungeon.ui.AnimationPanel;
+import com.dungeon.ui.panels.AnimationPanel;
 import javafx.application.Platform;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * État du menu principal
  */
 public class MenuState implements GameState {
-    
+    private static final Logger logger = Logger.getLogger(MenuState.class.getName());
+    private boolean choixSauvegarde = false;
+    private Joueur joueurSauvegarde = null;
+
     @Override
     public void enter(GameContext context) {
-        Platform.runLater(() -> 
-            context.getGameUI().getAnimationPanel().changeScene(AnimationPanel.SceneType.MENU, 0)
-        );
-        
-        // Vérifier s'il y a une sauvegarde
-        if (context.getJoueurService().sauvegardeExiste()) {
-            chargerOuNouvellePartie(context);
-        } else {
-            creerNouvellePartie(context);
-        }
+        logger.info("MenuState.enter() appelée");
+
+        // Planifier l'initialisation du menu sur le thread JavaFX sans bloquer le thread de jeu
+        Platform.runLater(() -> {
+            logger.info("Initialisation du menu sur le thread JavaFX");
+            try {
+                // Afficher l'écran du menu
+                context.getGameUI().getAnimationPanel().changeScene(AnimationPanel.SceneType.MENU, 0);
+
+                // Vérifier s'il y a une sauvegarde
+                boolean hasSave = context.getJoueurService().sauvegardeExiste();
+
+                if (hasSave) {
+                    try {
+                        joueurSauvegarde = context.getJoueurService().chargerSauvegarde();
+                        if (joueurSauvegarde != null && joueurSauvegarde.getPv() > 0) {
+                            logger.info("Sauvegarde trouvée");
+                            afficherMenuSauvegarde(context, joueurSauvegarde);
+
+                            choixSauvegarde = true;
+                            String[] options = {
+                                "▶️ Reprendre la partie sauvegardée",
+                                "🆕 Nouvelle partie (écrase la sauvegarde)"
+                            };
+                            context.getUiService().attendreChoixAsync(options, context, this);
+                            return;
+                        }
+                    } catch (Exception e) {
+                        logger.log(Level.WARNING, "Erreur lors du chargement de la sauvegarde", e);
+                    }
+                }
+
+                // Créer une nouvelle partie
+                logger.info("Création d'une nouvelle partie");
+                creerNouvellePartie(context);
+
+                choixSauvegarde = false;
+                String[] options = {"Continuer"};
+                context.getUiService().attendreChoixAsync(options, context, this);
+
+            } catch (Exception e) {
+                logger.log(Level.SEVERE, "Erreur lors de l'initialisation du menu", e);
+                e.printStackTrace();
+            }
+        });
     }
-    
+
     @Override
     public void handleAction(GameContext context, int choix) {
-        // Actions gérées directement dans enter()
+        logger.info("Gestion de l'action du menu: choix=" + choix);
+
+        if (choixSauvegarde) {
+            if (choix == 0) {
+                context.getUiService().afficherMessage("✅ Chargement de la partie sauvegardée...");
+                context.setJoueur(joueurSauvegarde);
+                Platform.runLater(() ->
+                    context.getGameUI().getGamePanel().getStatsPanel().updateStats(joueurSauvegarde)
+                );
+            } else {
+                context.getUiService().afficherMessage("⚠️ Suppression de la sauvegarde précédente...");
+                context.getJoueurService().supprimerSauvegarde();
+                Joueur joueur = context.getJoueurService().creerJoueur("Aventurier");
+                context.setJoueur(joueur);
+                Platform.runLater(() ->
+                    context.getGameUI().getGamePanel().getStatsPanel().updateStats(joueur)
+                );
+            }
+        }
+
+        logger.info("Passage à l'état ExplorationState");
+        context.setState(new ExplorationState());
     }
-    
+
     @Override
     public void exit(GameContext context) {
-        // Rien à faire
+        logger.info("Sortie de MenuState");
     }
-    
+
     @Override
     public String getStateName() {
         return "Menu";
     }
-    
-    private void chargerOuNouvellePartie(GameContext context) {
-        try {
-            Joueur joueurSauvegarde = context.getJoueurService().chargerSauvegarde();
-            if (joueurSauvegarde.getPv() > 0) {
-                afficherMenuSauvegarde(context, joueurSauvegarde);
-                
-                String[] options = {
-                    "▶️ Reprendre la partie sauvegardée",
-                    "🆕 Nouvelle partie (écrase la sauvegarde)"
-                };
-                
-                int choix = context.getUiService().attendreChoix(options);
-                
-                if (choix == 0) {
-                    context.getUiService().afficherMessage("✅ Chargement de la partie sauvegardée...");
-                    context.setJoueur(joueurSauvegarde);
-                    Platform.runLater(() -> 
-                        context.getGameUI().getGamePanel().getStatsPanel().updateStats(joueurSauvegarde)
-                    );
-                } else {
-                    context.getUiService().afficherMessage("⚠️ Suppression de la sauvegarde précédente...");
-                    context.getJoueurService().supprimerSauvegarde();
-                    creerNouvellePartie(context);
-                }
-            } else {
-                creerNouvellePartie(context);
-            }
-        } catch (Exception e) {
-            context.getUiService().afficherMessage("❌ Erreur lors du chargement : " + e.getMessage());
-            context.getUiService().afficherMessage("Démarrage d'une nouvelle partie...");
-            creerNouvellePartie(context);
-        }
-        
-        // Passer à l'état d'exploration
-        context.setState(new ExplorationState());
-    }
-    
-    private void creerNouvellePartie(GameContext context) {
-        afficherBienvenue(context);
-        
-        Joueur joueur = context.getJoueurService().creerJoueur("Aventurier");
-        context.setJoueur(joueur);
-        
-        Platform.runLater(() -> 
-            context.getGameUI().getGamePanel().getStatsPanel().updateStats(joueur)
-        );
-        
-        afficherInfosJoueur(context, joueur);
-    }
-    
+
     private void afficherMenuSauvegarde(GameContext context, Joueur joueur) {
         context.getUiService().afficherMessage("╔══════════════════════════════════════╗");
         context.getUiService().afficherMessage("║   ⚔️  DUNGEON QUEST  ⚔️              ║");
@@ -102,7 +114,20 @@ public class MenuState implements GameState {
         context.getUiService().afficherMessage("• Or : " + joueur.getPiecesOr() + " pièces");
         context.getUiService().afficherMessage("");
     }
-    
+
+    private void creerNouvellePartie(GameContext context) {
+        afficherBienvenue(context);
+
+        Joueur joueur = context.getJoueurService().creerJoueur("Aventurier");
+        context.setJoueur(joueur);
+
+        Platform.runLater(() ->
+            context.getGameUI().getGamePanel().getStatsPanel().updateStats(joueur)
+        );
+
+        afficherInfosJoueur(context, joueur);
+    }
+
     private void afficherBienvenue(GameContext context) {
         context.getUiService().afficherMessage("╔══════════════════════════════════════╗");
         context.getUiService().afficherMessage("║   ⚔️  DUNGEON QUEST  ⚔️              ║");
@@ -113,7 +138,7 @@ public class MenuState implements GameState {
         context.getUiService().afficherMessage("🆕 Création d'une nouvelle partie...");
         context.getUiService().afficherMessage("");
     }
-    
+
     private void afficherInfosJoueur(GameContext context, Joueur joueur) {
         context.getUiService().afficherMessage("✅ Partie créée avec succès !");
         context.getUiService().afficherMessage("• Niveau : " + joueur.getNiveau());

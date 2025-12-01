@@ -3,7 +3,7 @@ package com.dungeon.controller.state;
 import com.dungeon.controller.GameContext;
 import com.dungeon.model.item.arme.Arme;
 import com.dungeon.model.salle.SalleBoutique;
-import com.dungeon.ui.AnimationPanel;
+import com.dungeon.ui.panels.AnimationPanel;
 import javafx.application.Platform;
 
 import java.util.ArrayList;
